@@ -23,3 +23,5 @@ Shovel Knight Character - Yacht Club Games [https://www.yachtclubgames.com/games
 Letters - Sharm [https://opengameart.org/content/tiny-16-basic]
 
 Smash Bros Ultimate - batteryacid [https://www.pixilart.com/art/steve-in-smash-a1ad70baefc480d?ft=topic&ft_id=6]
+
+Sample Image - Wikipedia [https://en.wikipedia.org/wiki/Pixel-art_scaling_algorithms#/media/File:Pixel-Art_Scaling_Comparison.png]

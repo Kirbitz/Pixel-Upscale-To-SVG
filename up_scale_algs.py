@@ -3,6 +3,26 @@ import numpy as np
 def three_or_more_equal(a, b, c, d):
     return (np.array_equal(a, b) and (np.array_equal(a, c) or np.array_equal(a, d))) or (np.array_equal(a, c) and np.array_equal(a, d)) or (np.array_equal(b, c) and np.array_equal(b, d))
 
+def nearest_neighbor(img, Iterations=1):
+    for k in range(Iterations):
+        img_scaled = []
+        for i in range(0, len(img)):
+            img_row_top = []
+            img_row_bottom = []
+            for j in range(0, len(img[i])):
+                p = np.array([img[i][j], img[i][j], img[i][j], img[i][j]])
+
+                img_row_top.append(p[0])
+                img_row_top.append(p[1])
+                img_row_bottom.append(p[2])
+                img_row_bottom.append(p[3])
+            
+            img_scaled.append(img_row_top)
+            img_scaled.append(img_row_bottom)
+        
+        img = np.array(img_scaled, dtype=np.uint8)
+    return img
+
 def EPX(img, Iterations=1):
     for k in range(Iterations):
         img_scaled = []
@@ -33,7 +53,7 @@ def EPX(img, Iterations=1):
             img_scaled.append(img_row_top)
             img_scaled.append(img_row_bottom)
         
-        img = np.array(img_scaled.copy(), dtype=np.uint8)
+        img = np.array(img_scaled, dtype=np.uint8)
     return img
 
 def scale_2x(img, Iterations=1):
@@ -65,5 +85,5 @@ def scale_2x(img, Iterations=1):
             img_scaled.append(img_row_top)
             img_scaled.append(img_row_bottom)
         
-        img = np.array(img_scaled.copy(), dtype=np.uint8)
+        img = np.array(img_scaled, dtype=np.uint8)
     return img
