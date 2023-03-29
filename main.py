@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import os
-from up_scale_algs import EPX
+from up_scale_algs import scale_2x
 
 def main():
     # for filename in os.listdir(os.path.join(os.getcwd(), 'pixel_art')):
@@ -9,8 +9,8 @@ def main():
     #     img = EPX(img)
     #     cv2.imshow(filename, img)
     
-    img = cv2.imread("pixel_art/octopath_traveler_characters.png", cv2.IMREAD_COLOR)
-    img = EPX(img, Iterations=2)
+    img = cv2.imread("pixel_art/enter_the_gungeon_guns.png", cv2.IMREAD_COLOR)
+    img = scale_2x(img, Iterations=2)
     cv2.imshow("Read and Show", img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
