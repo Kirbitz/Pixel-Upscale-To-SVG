@@ -5,85 +5,47 @@ def three_or_more_equal(a, b, c, d):
 
 def nearest_neighbor(img, Iterations=1):
     for k in range(Iterations):
-        img_scaled = []
-        for i in range(0, len(img)):
-            img_row_top = []
-            img_row_bottom = []
-            for j in range(0, len(img[i])):
-                p = np.array([img[i][j], img[i][j], img[i][j], img[i][j]])
-
-                img_row_top.append(p[0])
-                img_row_top.append(p[1])
-                img_row_bottom.append(p[2])
-                img_row_bottom.append(p[3])
-            
-            img_scaled.append(img_row_top)
-            img_scaled.append(img_row_bottom)
-        
-        img = np.array(img_scaled, dtype=np.uint8)
+        img = np.repeat(img, 2, axis=1)
+        img = np.repeat(img, 2, axis=0)
     return img
 
 def EPX(img, Iterations=1):
     for k in range(Iterations):
-        img_scaled = []
-        for i in range(0, len(img)):
-            img_row_top = []
-            img_row_bottom = []
-            for j in range(0, len(img[i])):
-                p = np.array([img[i][j], img[i][j], img[i][j], img[i][j]])
+        img_scaled = np.repeat(img, 2, axis=1)
+        img_scaled = np.repeat(img_scaled, 2, axis=0)
 
-                if not (i == 0 or j == 0 or i == len(img) - 1 or j == len(img[i]) - 1):
-                    a, b, c, d = img[i-1][j], img[i][j+1], img[i][j-1], img[i+1][j]
-
-                    if not three_or_more_equal(a, b, c, d):
-                        if np.array_equal(c, a):
-                            p[0] = a
-                        if np.array_equal(a, b):
-                            p[1] = b
-                        if np.array_equal(d, c):
-                            p[2] = c
-                        if np.array_equal(b, d):
-                            p[3] = d
-
-                img_row_top.append(p[0])
-                img_row_top.append(p[1])
-                img_row_bottom.append(p[2])
-                img_row_bottom.append(p[3])
-            
-            img_scaled.append(img_row_top)
-            img_scaled.append(img_row_bottom)
+        for i in range(1, len(img) - 1):
+            for j in range(1, len(img[i] - 1)):
+                a, b, c, d = img[i-1][j], img[i][j+1], img[i][j-1], img[i+1][j]
+                if not three_or_more_equal(a, b, c, d):
+                    if np.array_equal(c, a):
+                        img_scaled[i*2][j*2] = a
+                    if np.array_equal(a, b):
+                        img_scaled[i*2][j*2+1] = b
+                    if np.array_equal(d, c):
+                        img_scaled[i*2+1][j*2] = c
+                    if np.array_equal(b, d):
+                        img_scaled[i*2+1][j*2+1] = d
         
         img = np.array(img_scaled, dtype=np.uint8)
     return img
 
 def scale_2x(img, Iterations=1):
     for k in range(Iterations):
-        img_scaled = []
-        for i in range(0, len(img)):
-            img_row_top = []
-            img_row_bottom = []
-            for j in range(0, len(img[i])):
-                p = np.array([img[i][j], img[i][j], img[i][j], img[i][j]])
+        img_scaled = np.repeat(img, 2, axis=1)
+        img_scaled = np.repeat(img_scaled, 2, axis=0)
+        for i in range(1, len(img) - 1):
+            for j in range(1, len(img[i]) - 1):
+                a, b, c, d = img[i-1][j], img[i][j+1], img[i][j-1], img[i+1][j]
 
-                if not (i == 0 or j == 0 or i == len(img) - 1 or j == len(img[i]) - 1):
-                    a, b, c, d = img[i-1][j], img[i][j+1], img[i][j-1], img[i+1][j]
-
-                    if np.array_equal(c, a) and not np.array_equal(c, d) and not np.array_equal(a, b):
-                        p[0] = a
-                    if np.array_equal(a, b) and not np.array_equal(a, c) and not np.array_equal(b, d):
-                        p[1] = b
-                    if np.array_equal(d, c) and not np.array_equal(d, b) and not np.array_equal(c, a):
-                        p[2] = c
-                    if np.array_equal(b, d) and not np.array_equal(b, a) and not np.array_equal(d, c):
-                        p[3] = d
-
-                img_row_top.append(p[0])
-                img_row_top.append(p[1])
-                img_row_bottom.append(p[2])
-                img_row_bottom.append(p[3])
-            
-            img_scaled.append(img_row_top)
-            img_scaled.append(img_row_bottom)
+                if np.array_equal(c, a) and not np.array_equal(c, d) and not np.array_equal(a, b):
+                    img_scaled[i*2][j*2] = a
+                if np.array_equal(a, b) and not np.array_equal(a, c) and not np.array_equal(b, d):
+                    img_scaled[i*2][j*2+1] = b
+                if np.array_equal(d, c) and not np.array_equal(d, b) and not np.array_equal(c, a):
+                    img_scaled[i*2+1][j*2] = c
+                if np.array_equal(b, d) and not np.array_equal(b, a) and not np.array_equal(d, c):
+                    img_scaled[i*2+1][j*2+1] = d
         
         img = np.array(img_scaled, dtype=np.uint8)
     return img
