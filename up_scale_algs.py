@@ -117,3 +117,32 @@ def eagle_2x(img, Iterations=1):
         img = np.array(imgScaled, dtype=np.uint8)
     return img
 
+def bilinear2x(img,Iterations=1): #There is a vectorized version of this that runs faster
+    
+    for k in range(Iterations): 
+        height = len(img) * 2
+        width = len(img[1]) * 2
+        imgScaled = np.zeros((height, width, 3))
+        xRatio = float(len(img) - 1) / (height - 1)
+        yRatio = float(len(img[1])-1) / (width - 1)
+
+        for i in range(height):
+            for j in range(width):
+                x1 = np.uint8(np.floor(xRatio * j ))
+                y1 = np.uint8(np.floor(yRatio * i))
+                xh = np.uint8(np.ceil(xRatio * j))
+                yh = np.uint8(np.ceil(yRatio * i))
+                xWeight = (xRatio * j) - x1
+                yWeight = (yRatio * i) - y1
+                a = img[y1, x1]
+                b = img[y1, xh]
+                c = img[yh, x1]
+                d = img[yh, xh]
+                pixel = a * (1 - xWeight) * (1 - yWeight) + b * xWeight * (1 - yWeight) + c * yWeight * (1-xWeight) + d * xWeight * yWeight
+                imgScaled[i,j] = pixel
+        img = np.array(imgScaled, dtype=np.uint8)
+    return img
+
+def xBR(img, Iterations=1):
+
+    return img
