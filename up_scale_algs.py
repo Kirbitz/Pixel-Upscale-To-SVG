@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def three_or_more_equal(a, b, c, d):
     return (np.array_equal(a, b) and (np.array_equal(a, c) or np.array_equal(a, d))) or (np.array_equal(a, c) and np.array_equal(a, d)) or (np.array_equal(b, c) and np.array_equal(b, d))
 
@@ -86,4 +87,17 @@ def scale_2x(img, Iterations=1):
             img_scaled.append(img_row_bottom)
         
         img = np.array(img_scaled, dtype=np.uint8)
+    return img
+
+def Eagle(img, iterations):
+    imgScaled = []
+    for k in range(iterations):
+        for i in range(1, len(img)):
+            for j in range(1, len(img[1])):
+                img_row = []
+
+    return imgScaled
+
+def hq2x(img, iterations):
+    
     return img
