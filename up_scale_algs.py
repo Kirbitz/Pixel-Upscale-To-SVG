@@ -89,15 +89,31 @@ def scale_2x(img, Iterations=1):
         img = np.array(img_scaled, dtype=np.uint8)
     return img
 
-def Eagle(img, iterations):
-    imgScaled = []
-    for k in range(iterations):
-        for i in range(1, len(img)):
-            for j in range(1, len(img[1])):
-                img_row = []
+def eagle_2x(img, Iterations=1):
+    for k in range(Iterations):
+        imgScaled = []
+        for i in range(0, len(img)):
+            imgTopRow = []
+            imgBottomRow = []
+            for j in range(0, len(img[1])):
+                p = np.full((4,3),img[i,j])
 
-    return imgScaled
+                if not(i == 0 or j == 0 or i == len(img) - 1 or j == len(img[1]) - 1):
+                    if np.array_equal(img[i,j-1],img[i-1,j-1]) and np.array_equal(img[i,j-1], img[i-1,j]):
+                        p[0] = img[i-1,j-1]
+                    if np.array_equal(img[i-1,j], img[i-1,j+1]) and np.array_equal(img[i-1,j],img[i,j+1]):
+                        p[1] = img[i-1,j+1]
+                    if np.array_equal(img[i,j-1],img[i+1,j-1]) and np.array_equal(img[i,j-1], img[i+1,j]):
+                        p[2] = img[i+1,j-1]
+                    if np.array_equal(img[i,j+1],img[i+1,j+1]) and np.array_equal(img[i,j+1], img[i+1,j]):
+                        p[3] = img[i+1,j+1]
 
-def hq2x(img, iterations):
-    
+                imgTopRow.append(p[0])
+                imgTopRow.append(p[1])
+                imgBottomRow.append(p[2])
+                imgBottomRow.append(p[3])
+            imgScaled.append(imgTopRow)
+            imgScaled.append(imgBottomRow)
+        img = np.array(imgScaled, dtype=np.uint8)
     return img
+
