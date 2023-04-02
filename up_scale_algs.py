@@ -143,6 +143,4 @@ def bilinear2x(img,Iterations=1): #There is a vectorized version of this that ru
         img = np.array(imgScaled, dtype=np.uint8)
     return img
 
-def xBR(img, Iterations=1):
 
-    return img
