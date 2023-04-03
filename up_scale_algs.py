@@ -123,15 +123,15 @@ def bilinear(img,scaleFactor): #There is a vectorized version of this that runs 
     height = len(img) * scaleFactor
     width = len(img[1]) * scaleFactor
     imgScaled = np.zeros((height, width, 3))
-    xRatio = float(len(img) - 1) / (height - 1)
-    yRatio = float(len(img[1])-1) / (width - 1)
+    xRatio = float(len(img[1]) - 1) / (width - 1)
+    yRatio = float(len(img)-1) / (height - 1)
 
     for i in range(height):
         for j in range(width):
-            x1 = np.uint8(np.floor(xRatio * j ))
-            y1 = np.uint8(np.floor(yRatio * i))
-            xh = np.uint8(np.ceil(xRatio * j))
-            yh = np.uint8(np.ceil(yRatio * i))
+            x1 = np.uint32(np.floor(xRatio * j ))
+            y1 = np.uint32(np.floor(yRatio * i))
+            xh = np.uint32(np.ceil(xRatio * j))
+            yh = np.uint32(np.ceil(yRatio * i))
             xWeight = (xRatio * j) - x1
             yWeight = (yRatio * i) - y1
             a = img[y1, x1]
