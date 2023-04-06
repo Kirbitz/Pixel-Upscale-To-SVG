@@ -144,16 +144,16 @@ def bilinear(img,scaleFactor): #There is a vectorized version of this that runs 
 
 
 def _computeSpline_(p0,p1,p2,p3,x):
-    return p1 + 0.5 * x*(p2 - p0 + x*(2.0*p0 - 5.0*p1 + 4.0*p2 - p3 + x*(3.0*(p1 - p2) + p2 - p0)))
+    return np.abs(p1 + 0.5 * x*(p2 - p0 + x*(2.0*p0 - 5.0*p1 + 4.0*p2 - p3 + x*(3.0*(p1 - p2) + p2 - p0))))
 
 def bicubic(img, scaleFactor):
     baseHeight = len(img)
     baseWidth = len(img[1])
     padded = np.zeros((baseHeight+2, baseWidth+2, 3),dtype=np.uint8)
     padded[1:-1, 1:-1] = img
-    img = padded
+    img = padded 
     newHeight, newWidth = baseHeight * scaleFactor, baseWidth * scaleFactor
-    imgScaled = np.zeros((newHeight,newWidth,3))
+    imgScaled = np.zeros((newHeight,newWidth,3), dtype=np.uint8)
     xRatio = float(baseWidth - 1) / (newWidth - 1)
     yRatio = float(baseHeight - 1) / (newHeight - 1)
 
@@ -171,8 +171,11 @@ def bicubic(img, scaleFactor):
             p01,p11,p21,p31 = img[y1,x0], img[y1,x1], img[y1,x2], img[y1,x3]
             p02,p12,p22,p32 = img[y2,x0], img[y2,x1], img[y2,x2], img[y2,x3]
             p03,p13,p23,p33 = img[y3,x0], img[y3,x1], img[y3,x2], img[y3,x3]
-            imgScaled[i,j] = _computeSpline_(_computeSpline_(p00,p10,p20,p30, j), _computeSpline_(p01,p11,p21,p31,j),\
-                                             _computeSpline_(p02,p12,p22,p32,j),_computeSpline_(p03,p13,p23,p33,j),i)
+            deltaX = x2 - x1
+            deltaY = y2 - y1
+            imgScaled[i,j] = _computeSpline_(_computeSpline_(p00,p10,p20,p30, deltaX), _computeSpline_(p01,p11,p21,p31,deltaX),\
+                                             _computeSpline_(p02,p12,p22,p32,deltaX),_computeSpline_(p03,p13,p23,p33,deltaX),deltaY)
+           # print(imgScaled[i,j])
     img = np.array(imgScaled, dtype=np.uint8)
     return img
 
