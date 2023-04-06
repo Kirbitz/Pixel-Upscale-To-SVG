@@ -119,7 +119,6 @@ def eagle_2x(img, Iterations=1):
 
 def bilinear(img,scaleFactor): #There is a vectorized version of this that runs faster
     
-    
     height = len(img) * scaleFactor
     width = len(img[1]) * scaleFactor
     imgScaled = np.zeros((height, width, 3))
@@ -143,4 +142,37 @@ def bilinear(img,scaleFactor): #There is a vectorized version of this that runs 
     img = np.array(imgScaled, dtype=np.uint8)
     return img
 
+
+def _computeSpline_(p0,p1,p2,p3,x):
+    return p1 + 0.5 * x*(p2 - p0 + x*(2.0*p0 - 5.0*p1 + 4.0*p2 - p3 + x*(3.0*(p1 - p2) + p2 - p0)))
+
+def bicubic(img, scaleFactor):
+    baseHeight = len(img)
+    baseWidth = len(img[1])
+    padded = np.zeros((baseHeight+2, baseWidth+2, 3),dtype=np.uint8)
+    padded[1:-1, 1:-1] = img
+    img = padded
+    newHeight, newWidth = baseHeight * scaleFactor, baseWidth * scaleFactor
+    imgScaled = np.zeros((newHeight,newWidth,3))
+    xRatio = float(baseWidth - 1) / (newWidth - 1)
+    yRatio = float(baseHeight - 1) / (newHeight - 1)
+
+    for i in range(newHeight):
+        for j in range(newWidth):
+            x0 = np.uint32(np.floor(xRatio * (j - 1))) if j > 0 else 0
+            x1 = np.uint32(np.floor(xRatio * j))
+            x2 = np.uint32(np.ceil(xRatio * j))
+            x3 = np.uint32(np.ceil(xRatio * (j+1))) 
+            y0 = np.uint32(np.floor(yRatio * (i-1))) if i > 0 else 0
+            y1 = np.uint32(np.floor(yRatio * i))
+            y2 = np.uint32(np.ceil(yRatio * i))
+            y3 = np.uint32(np.ceil(yRatio * (i+1))) 
+            p00,p10,p20,p30 = img[y0,x0], img[y0,x1], img[y0,x2], img[y0,x3]
+            p01,p11,p21,p31 = img[y1,x0], img[y1,x1], img[y1,x2], img[y1,x3]
+            p02,p12,p22,p32 = img[y2,x0], img[y2,x1], img[y2,x2], img[y2,x3]
+            p03,p13,p23,p33 = img[y3,x0], img[y3,x1], img[y3,x2], img[y3,x3]
+            imgScaled[i,j] = _computeSpline_(_computeSpline_(p00,p10,p20,p30, j), _computeSpline_(p01,p11,p21,p31,j),\
+                                             _computeSpline_(p02,p12,p22,p32,j),_computeSpline_(p03,p13,p23,p33,j),i)
+    img = np.array(imgScaled, dtype=np.uint8)
+    return img
 
