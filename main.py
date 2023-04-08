@@ -3,8 +3,8 @@ import numpy as np
 import up_scale_algs as usa
 
 gui_name = "Image Window"
-img = cv2.imread("pixel_art/enter_the_gungeon_guns.png", cv2.IMREAD_COLOR)
-scale = 2
+img = cv2.imread("pixel_art/octopath_traveler_characters.png", cv2.IMREAD_COLOR)
+scale = 1
 scale_type = 0
 
 def image_upscale(x):
