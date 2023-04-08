@@ -74,20 +74,6 @@ def eagle_2x(img, Iterations=1):
         img_scaled[2:-2:2, 3:-2:2][top_right_mask] = u[top_right_mask]
         img_scaled[3:-2:2, 2:-2:2][bottom_left_mask] = x[bottom_left_mask]
         img_scaled[3:-2:2, 3:-2:2][bottom_right_mask] = z[bottom_right_mask]
-        
-        # for i in range(1, len(img) - 1):
-        #     for j in range(1, len(img[0]) - 1):
-        #         p = np.full((4,3),img[i,j])
-
-        #         if not(i == 0 or j == 0 or i == len(img) - 1 or j == len(img[1]) - 1):
-        #             if np.array_equal(img[i,j-1],img[i-1,j-1]) and np.array_equal(img[i,j-1], img[i-1,j]):
-        #                 img_scaled[i*2][j*2] = img[i-1,j-1]
-        #             if np.array_equal(img[i-1,j], img[i-1,j+1]) and np.array_equal(img[i-1,j],img[i,j+1]):
-        #                 img_scaled[i*2][j*2+1] = img[i-1,j+1]
-        #             if np.array_equal(img[i,j-1],img[i+1,j-1]) and np.array_equal(img[i,j-1], img[i+1,j]):
-        #                 img_scaled[i*2+1][j*2] = img[i+1,j-1]
-        #             if np.array_equal(img[i,j+1],img[i+1,j+1]) and np.array_equal(img[i,j+1], img[i+1,j]):
-        #                 img_scaled[i*2+1][j*2+1] = img[i+1,j+1]
 
         img = np.array(img_scaled, dtype=np.uint8)
     return img
