@@ -4,14 +4,12 @@ def three_or_more_equal(a, b, c, d):
     return (np.array_equal(a, b) and (np.array_equal(a, c) or np.array_equal(a, d))) or (np.array_equal(a, c) and np.array_equal(a, d)) or (np.array_equal(b, c) and np.array_equal(b, d))
 
 def nearest_neighbor(img, scale_factor):
-    img = np.repeat(img, scale_factor*2, axis=1)
-    img = np.repeat(img, scale_factor*2, axis=0)
+    img = img.repeat(scale_factor, 1).repeat(scale_factor, 0)
     return img
 
 def EPX(img, Iterations=1):
     for k in range(Iterations):
-        img_scaled = np.repeat(img, 2, axis=1)
-        img_scaled = np.repeat(img_scaled, 2, axis=0)
+        img_scaled = img.repeat(2, 1).repeat(2, 0)
 
         for i in range(1, len(img) - 1):
             for j in range(1, len(img[0]) - 1):
@@ -32,8 +30,7 @@ def EPX(img, Iterations=1):
 
 def scale_2x(img, Iterations=1):
     for k in range(Iterations):
-        img_scaled = np.repeat(img, 2, axis=1)
-        img_scaled = np.repeat(img_scaled, 2, axis=0)
+        img_scaled = img.repeat(2, 1).repeat(2, 0)
 
         for i in range(1, len(img) - 1):
             for j in range(1, len(img[0]) - 1):
@@ -53,8 +50,7 @@ def scale_2x(img, Iterations=1):
 
 def eagle_2x(img, Iterations=1):
     for k in range(Iterations):
-        img_scaled = np.repeat(img, 2, axis=1)
-        img_scaled = np.repeat(img_scaled, 2, axis=0)
+        img_scaled = img.repeat(2, 1).repeat(2, 0)
         
         for i in range(1, len(img) - 1):
             for j in range(1, len(img[0]) - 1):

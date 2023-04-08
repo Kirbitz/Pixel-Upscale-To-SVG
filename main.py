@@ -29,7 +29,6 @@ def main():
     global img
     cv2.createTrackbar('Scale Type', gui_name, 0, 4, image_upscale)
     image_upscale(0)
-    cv2.imshow(gui_name, img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
