@@ -55,20 +55,39 @@ def scale_2x(img, Iterations=1):
 def eagle_2x(img, Iterations=1):
     for k in range(Iterations):
         img_scaled = img.repeat(2, 1).repeat(2, 0)
-        
-        for i in range(1, len(img) - 1):
-            for j in range(1, len(img[0]) - 1):
-                p = np.full((4,3),img[i,j])
 
-                if not(i == 0 or j == 0 or i == len(img) - 1 or j == len(img[1]) - 1):
-                    if np.array_equal(img[i,j-1],img[i-1,j-1]) and np.array_equal(img[i,j-1], img[i-1,j]):
-                        img_scaled[i*2][j*2] = img[i-1,j-1]
-                    if np.array_equal(img[i-1,j], img[i-1,j+1]) and np.array_equal(img[i-1,j],img[i,j+1]):
-                        img_scaled[i*2][j*2+1] = img[i-1,j+1]
-                    if np.array_equal(img[i,j-1],img[i+1,j-1]) and np.array_equal(img[i,j-1], img[i+1,j]):
-                        img_scaled[i*2+1][j*2] = img[i+1,j-1]
-                    if np.array_equal(img[i,j+1],img[i+1,j+1]) and np.array_equal(img[i,j+1], img[i+1,j]):
-                        img_scaled[i*2+1][j*2+1] = img[i+1,j+1]
+        s = img[:-2, :-2]
+        t = img[0:-2, 1:-1]
+        u = img[:-2, 2:]
+        v = img[1:-1, 0:-2]
+        w = img[1:-1, 2:]
+        x = img[2:, :-2]
+        y = img[2:, 1:-1]
+        z = img[2:, 2:]
+
+        top_left_mask = np.logical_and(np.all(v == s, axis=2), np.all(s == t, axis=2))
+        top_right_mask = np.logical_and(np.all(t == u, axis=2), np.all(u == w, axis=2))
+        bottom_left_mask = np.logical_and(np.all(v == x, axis=2), np.all(x == y, axis=2))
+        bottom_right_mask = np.logical_and(np.all(w == z, axis=2), np.all(z == y, axis=2))
+
+        img_scaled[2:-2:2, 2:-2:2][top_left_mask] = s[top_left_mask]
+        img_scaled[2:-2:2, 3:-2:2][top_right_mask] = u[top_right_mask]
+        img_scaled[3:-2:2, 2:-2:2][bottom_left_mask] = x[bottom_left_mask]
+        img_scaled[3:-2:2, 3:-2:2][bottom_right_mask] = z[bottom_right_mask]
+        
+        # for i in range(1, len(img) - 1):
+        #     for j in range(1, len(img[0]) - 1):
+        #         p = np.full((4,3),img[i,j])
+
+        #         if not(i == 0 or j == 0 or i == len(img) - 1 or j == len(img[1]) - 1):
+        #             if np.array_equal(img[i,j-1],img[i-1,j-1]) and np.array_equal(img[i,j-1], img[i-1,j]):
+        #                 img_scaled[i*2][j*2] = img[i-1,j-1]
+        #             if np.array_equal(img[i-1,j], img[i-1,j+1]) and np.array_equal(img[i-1,j],img[i,j+1]):
+        #                 img_scaled[i*2][j*2+1] = img[i-1,j+1]
+        #             if np.array_equal(img[i,j-1],img[i+1,j-1]) and np.array_equal(img[i,j-1], img[i+1,j]):
+        #                 img_scaled[i*2+1][j*2] = img[i+1,j-1]
+        #             if np.array_equal(img[i,j+1],img[i+1,j+1]) and np.array_equal(img[i,j+1], img[i+1,j]):
+        #                 img_scaled[i*2+1][j*2+1] = img[i+1,j+1]
 
         img = np.array(img_scaled, dtype=np.uint8)
     return img
