@@ -1,124 +1,84 @@
 import numpy as np
 
-
 def three_or_more_equal(a, b, c, d):
-    return (np.array_equal(a, b) and (np.array_equal(a, c) or np.array_equal(a, d))) or (np.array_equal(a, c) and np.array_equal(a, d)) or (np.array_equal(b, c) and np.array_equal(b, d))
+    return np.logical_or(np.logical_and(np.all(a == b, axis=2), np.logical_or(np.all(a == c, axis=2), np.all(a == d, axis=2))), np.logical_and(np.all(a == c, axis=2), np.all(a == d, axis=2)), np.logical_and(np.all(b == c, axis=2), np.all(b == d, axis=2)))
 
-def nearest_neighbor(img, Iterations=1):
-    for k in range(Iterations):
-        img_scaled = []
-        for i in range(0, len(img)):
-            img_row_top = []
-            img_row_bottom = []
-            for j in range(0, len(img[i])):
-                p = np.array([img[i][j], img[i][j], img[i][j], img[i][j]])
-
-                img_row_top.append(p[0])
-                img_row_top.append(p[1])
-                img_row_bottom.append(p[2])
-                img_row_bottom.append(p[3])
-            
-            img_scaled.append(img_row_top)
-            img_scaled.append(img_row_bottom)
-        
-        img = np.array(img_scaled, dtype=np.uint8)
+def nearest_neighbor(img, scale_factor):
+    img = img.repeat(scale_factor, 1).repeat(scale_factor, 0)
     return img
 
 def EPX(img, Iterations=1):
     for k in range(Iterations):
-        img_scaled = []
-        for i in range(0, len(img)):
-            img_row_top = []
-            img_row_bottom = []
-            for j in range(0, len(img[i])):
-                p = np.array([img[i][j], img[i][j], img[i][j], img[i][j]])
+        img_scaled = img.repeat(2, 1).repeat(2, 0)
 
-                if not (i == 0 or j == 0 or i == len(img) - 1 or j == len(img[i]) - 1):
-                    a, b, c, d = img[i-1][j], img[i][j+1], img[i][j-1], img[i+1][j]
+        a = img[0:-2, 1:-1]
+        b = img[1:-1, 2:]
+        c = img[1:-1, 0:-2]
+        d = img[2:, 1:-1]
 
-                    if not three_or_more_equal(a, b, c, d):
-                        if np.array_equal(c, a):
-                            p[0] = a
-                        if np.array_equal(a, b):
-                            p[1] = b
-                        if np.array_equal(d, c):
-                            p[2] = c
-                        if np.array_equal(b, d):
-                            p[3] = d
+        three_or_more_mask = np.logical_not(three_or_more_equal(a, b, c, d))
+        a_mask = np.logical_and(three_or_more_mask, np.all(a == c, axis=2))
+        b_mask = np.logical_and(three_or_more_mask, np.all(a == b, axis=2))
+        c_mask = np.logical_and(three_or_more_mask, np.all(d == c, axis=2))
+        d_mask = np.logical_and(three_or_more_mask, np.all(b == d, axis=2))
 
-                img_row_top.append(p[0])
-                img_row_top.append(p[1])
-                img_row_bottom.append(p[2])
-                img_row_bottom.append(p[3])
-            
-            img_scaled.append(img_row_top)
-            img_scaled.append(img_row_bottom)
+        img_scaled[2:-2:2, 2:-2:2][a_mask] = a[a_mask]
+        img_scaled[2:-2:2, 3:-2:2][b_mask] = b[b_mask]
+        img_scaled[3:-2:2, 2:-2:2][c_mask] = c[c_mask]
+        img_scaled[3:-2:2, 3:-2:2][d_mask] = d[d_mask]
         
         img = np.array(img_scaled, dtype=np.uint8)
     return img
 
 def scale_2x(img, Iterations=1):
     for k in range(Iterations):
-        img_scaled = []
-        for i in range(0, len(img)):
-            img_row_top = []
-            img_row_bottom = []
-            for j in range(0, len(img[i])):
-                p = np.array([img[i][j], img[i][j], img[i][j], img[i][j]])
+        img_scaled = img.repeat(2, 1).repeat(2, 0)
 
-                if not (i == 0 or j == 0 or i == len(img) - 1 or j == len(img[i]) - 1):
-                    a, b, c, d = img[i-1][j], img[i][j+1], img[i][j-1], img[i+1][j]
+        a = img[0:-2, 1:-1]
+        b = img[1:-1, 2:]
+        c = img[1:-1, 0:-2]
+        d = img[2:, 1:-1]
 
-                    if np.array_equal(c, a) and not np.array_equal(c, d) and not np.array_equal(a, b):
-                        p[0] = a
-                    if np.array_equal(a, b) and not np.array_equal(a, c) and not np.array_equal(b, d):
-                        p[1] = b
-                    if np.array_equal(d, c) and not np.array_equal(d, b) and not np.array_equal(c, a):
-                        p[2] = c
-                    if np.array_equal(b, d) and not np.array_equal(b, a) and not np.array_equal(d, c):
-                        p[3] = d
+        a_mask = np.logical_and(np.all(a == c, axis=2), np.logical_not(np.all(c == d, axis=2)), np.logical_not(np.all(a == b, axis=2)))
+        b_mask = np.logical_and(np.all(a == b, axis=2), np.logical_not(np.all(a == c, axis=2)), np.logical_not(np.all(b == d, axis=2)))
+        c_mask = np.logical_and(np.all(d == c, axis=2), np.logical_not(np.all(d == b, axis=2)), np.logical_not(np.all(a == c, axis=2)))
+        d_mask = np.logical_and(np.all(b == d, axis=2), np.logical_not(np.all(b == a, axis=2)), np.logical_not(np.all(d == c, axis=2)))
 
-                img_row_top.append(p[0])
-                img_row_top.append(p[1])
-                img_row_bottom.append(p[2])
-                img_row_bottom.append(p[3])
-            
-            img_scaled.append(img_row_top)
-            img_scaled.append(img_row_bottom)
+        img_scaled[2:-2:2, 2:-2:2][a_mask] = a[a_mask]
+        img_scaled[2:-2:2, 3:-2:2][b_mask] = b[b_mask]
+        img_scaled[3:-2:2, 2:-2:2][c_mask] = c[c_mask]
+        img_scaled[3:-2:2, 3:-2:2][d_mask] = d[d_mask]
         
         img = np.array(img_scaled, dtype=np.uint8)
     return img
 
 def eagle_2x(img, Iterations=1):
     for k in range(Iterations):
-        imgScaled = []
-        for i in range(0, len(img)):
-            imgTopRow = []
-            imgBottomRow = []
-            for j in range(0, len(img[1])):
-                p = np.full((4,3),img[i,j])
+        img_scaled = img.repeat(2, 1).repeat(2, 0)
 
-                if not(i == 0 or j == 0 or i == len(img) - 1 or j == len(img[1]) - 1):
-                    if np.array_equal(img[i,j-1],img[i-1,j-1]) and np.array_equal(img[i,j-1], img[i-1,j]):
-                        p[0] = img[i-1,j-1]
-                    if np.array_equal(img[i-1,j], img[i-1,j+1]) and np.array_equal(img[i-1,j],img[i,j+1]):
-                        p[1] = img[i-1,j+1]
-                    if np.array_equal(img[i,j-1],img[i+1,j-1]) and np.array_equal(img[i,j-1], img[i+1,j]):
-                        p[2] = img[i+1,j-1]
-                    if np.array_equal(img[i,j+1],img[i+1,j+1]) and np.array_equal(img[i,j+1], img[i+1,j]):
-                        p[3] = img[i+1,j+1]
+        s = img[:-2, :-2]
+        t = img[0:-2, 1:-1]
+        u = img[:-2, 2:]
+        v = img[1:-1, 0:-2]
+        w = img[1:-1, 2:]
+        x = img[2:, :-2]
+        y = img[2:, 1:-1]
+        z = img[2:, 2:]
 
-                imgTopRow.append(p[0])
-                imgTopRow.append(p[1])
-                imgBottomRow.append(p[2])
-                imgBottomRow.append(p[3])
-            imgScaled.append(imgTopRow)
-            imgScaled.append(imgBottomRow)
-        img = np.array(imgScaled, dtype=np.uint8)
+        top_left_mask = np.logical_and(np.all(v == s, axis=2), np.all(s == t, axis=2))
+        top_right_mask = np.logical_and(np.all(t == u, axis=2), np.all(u == w, axis=2))
+        bottom_left_mask = np.logical_and(np.all(v == x, axis=2), np.all(x == y, axis=2))
+        bottom_right_mask = np.logical_and(np.all(w == z, axis=2), np.all(z == y, axis=2))
+
+        img_scaled[2:-2:2, 2:-2:2][top_left_mask] = s[top_left_mask]
+        img_scaled[2:-2:2, 3:-2:2][top_right_mask] = u[top_right_mask]
+        img_scaled[3:-2:2, 2:-2:2][bottom_left_mask] = x[bottom_left_mask]
+        img_scaled[3:-2:2, 3:-2:2][bottom_right_mask] = z[bottom_right_mask]
+
+        img = np.array(img_scaled, dtype=np.uint8)
     return img
 
 def bilinear(img,scaleFactor): #There is a vectorized version of this that runs faster
-    
     
     height = len(img) * scaleFactor
     width = len(img[1]) * scaleFactor
