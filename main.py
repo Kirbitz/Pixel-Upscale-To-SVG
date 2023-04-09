@@ -3,7 +3,7 @@ import numpy as np
 import up_scale_algs as usa
 
 gui_name = "Image Window"
-img = cv2.imread("pixel_art/enter_the_gungeon_guns.png", cv2.IMREAD_COLOR)
+img = cv2.imread("pixel_art/fire_emblem_character_portraits.png", cv2.IMREAD_COLOR)
 scale = 1
 scale_type = 0
 
@@ -26,7 +26,6 @@ def image_upscale(x):
 
 def main():
     cv2.namedWindow(gui_name)
-    global img
     cv2.createTrackbar('Scale Type', gui_name, 0, 4, image_upscale)
     image_upscale(0)
     cv2.waitKey(0)
