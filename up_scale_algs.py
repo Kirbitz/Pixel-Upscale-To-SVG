@@ -144,8 +144,13 @@ def bilinear(img,scaleFactor): #There is a vectorized version of this that runs 
 
 
 def _computeSpline_(p0,p1,p2,p3,x):
-    return p1 + 0.5 * x*(p2 - p0 + x*(2.0*p0 - 5.0*p1 + 4.0*p2 - p3 + x*(3.0*(p1 - p2) + p2 - p0)))
+    result = p1 + 0.5 * x*(p2 - p0 + x*(2.0*p0 - 5.0*p1 + 4.0*p2 - p3 + x*(3.0*(p1 - p2) + p3 - p0)))
+    #print(result)
+    return result
 
+def test():
+    print(_computeSpline_(78,78,254,254,.5))
+    
 def bicubic(img, scaleFactor):
     baseHeight = len(img)
     baseWidth = len(img[1])
@@ -159,6 +164,18 @@ def bicubic(img, scaleFactor):
     yRatio = float(baseHeight - 1) / (newHeight - 1)
     for i in range(newHeight):
         for j in range(newWidth):
+
+            '''
+            x1 = 1 + x - math.floor(x)
+                x2 = x - math.floor(x)
+                x3 = math.floor(x) + 1 - x
+                x4 = math.floor(x) + 2 - x
+
+                y1 = 1 + y - math.floor(y)
+                y2 = y - math.floor(y)
+                y3 = math.floor(y) + 1 - y
+                y4 = math.floor(y) + 2 - y
+            '''
             x0 = np.uint32(np.floor(xRatio * (j-1))) + 2 if j > 0 else 0
             x1 = np.uint32(np.floor(xRatio * j)) + 2
             x2 = np.uint32(np.ceil(xRatio * j)) + 2
@@ -174,9 +191,10 @@ def bicubic(img, scaleFactor):
             p03,p13,p23,p33 = img[y3,x0], img[y3,x1], img[y3,x2], img[y3,x3]
             deltaX = x2 - x1
             deltaY = y2 - y1
-            imgScaled[i,j] = _computeSpline_(_computeSpline_(p00,p10,p20,p30, deltaX), _computeSpline_(p01,p11,p21,p31,deltaX),\
-                                            _computeSpline_(p02,p12,p22,p32,deltaX),_computeSpline_(p03,p13,p23,p33,deltaX),deltaY)
-            
+            print(p00,p10,p20,p30)
+            print()
+            imgScaled[i,j] = _computeSpline_(_computeSpline_(p00,p10,p20,p30, deltaX), _computeSpline_(p01,p11,p21,p31,deltaX),_computeSpline_(p02,p12,p22,p32,deltaX),_computeSpline_(p03,p13,p23,p33,deltaX),deltaY)
+            #print()
     img = np.array(imgScaled, dtype=np.uint8)
     return img
 
