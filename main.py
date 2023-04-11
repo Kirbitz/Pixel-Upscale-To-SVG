@@ -1,10 +1,10 @@
 import cv2
-import numpy as np
 import up_scale_algs as usa
+import svg as svg
 
 gui_name = "Image Window"
-img = cv2.imread("pixel_art/octopath_traveler_characters.png", cv2.IMREAD_COLOR)
-scale = 1
+img = cv2.imread("pixel_art/wikipedia_sample_img.png", cv2.IMREAD_COLOR)
+scale = 4
 scale_type = 0
 
 def image_upscale(x):
@@ -15,6 +15,7 @@ def image_upscale(x):
         img_show = usa.nearest_neighbor(img, 2 ** scale)
     elif scale_type == 1:
         img_show = usa.EPX(img, Iterations=scale)
+        svg.convert_to_svg(img_show)
     elif scale_type == 2:
         img_show = usa.scale_2x(img, Iterations=scale)
     elif scale_type == 3:
