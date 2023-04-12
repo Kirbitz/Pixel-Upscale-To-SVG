@@ -164,18 +164,7 @@ def bicubic(img, scaleFactor):
     yRatio = float(baseHeight - 1) / (newHeight - 1)
     for i in range(newHeight):
         for j in range(newWidth):
-
-            '''
-            x1 = 1 + x - math.floor(x)
-                x2 = x - math.floor(x)
-                x3 = math.floor(x) + 1 - x
-                x4 = math.floor(x) + 2 - x
-
-                y1 = 1 + y - math.floor(y)
-                y2 = y - math.floor(y)
-                y3 = math.floor(y) + 1 - y
-                y4 = math.floor(y) + 2 - y
-            '''
+           
             x0 = np.uint32(np.floor(xRatio * (j-1))) + 2 if j > 0 else 0
             x1 = np.uint32(np.floor(xRatio * j)) + 2
             x2 = np.uint32(np.ceil(xRatio * j)) + 2
@@ -189,10 +178,13 @@ def bicubic(img, scaleFactor):
             p01,p11,p21,p31 = img[y1,x0], img[y1,x1], img[y1,x2], img[y1,x3]
             p02,p12,p22,p32 = img[y2,x0], img[y2,x1], img[y2,x2], img[y2,x3]
             p03,p13,p23,p33 = img[y3,x0], img[y3,x1], img[y3,x2], img[y3,x3]
-            deltaX = x2 - x1
-            deltaY = y2 - y1
-            print(p00,p10,p20,p30)
-            print()
+            
+            #deltaX = x2 - x1
+            deltaX = ((xRatio * j) + 2) - x1
+            #deltaY = y2 - y1
+            deltaY = ((yRatio * i) + 2) - y1
+            #print(p00,p10,p20,p30)
+            #print()
             imgScaled[i,j] = _computeSpline_(_computeSpline_(p00,p10,p20,p30, deltaX), _computeSpline_(p01,p11,p21,p31,deltaX),_computeSpline_(p02,p12,p22,p32,deltaX),_computeSpline_(p03,p13,p23,p33,deltaX),deltaY)
             #print()
     img = np.array(imgScaled, dtype=np.uint8)
