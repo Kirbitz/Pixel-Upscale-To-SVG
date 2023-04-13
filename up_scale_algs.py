@@ -141,54 +141,6 @@ def bilinear(img,scaleFactor): #There is a vectorized version of this that runs 
     img = np.array(imgScaled, dtype=np.uint8)
     return img
 
-'''
-def _computeSpline_(p0,p1,p2,p3,x):
-    result = p1 + 0.5 * x*(p2 - p0 + x*(2.0*p0 - 5.0*p1 + 4.0*p2 - p3 + x*(3.0*(p1 - p2) + p3 - p0)))
-    print(result)
-    return result
-    
-def bicubic(img, scaleFactor):
-    baseHeight = len(img)
-    baseWidth = len(img[1])
-    padded = np.zeros((baseHeight+4, baseWidth+4, 3),dtype=np.uint8)
-    padded[2:-2, 2:-2] = img
-    img = padded 
-    
-    newHeight, newWidth = baseHeight * scaleFactor, baseWidth * scaleFactor
-    imgScaled = np.zeros((newHeight,newWidth,3), dtype=np.uint8)
-    xRatio = float(baseWidth - 1) / (newWidth - 1)
-    yRatio = float(baseHeight - 1) / (newHeight - 1)
-    for i in range(newHeight):
-        for j in range(newWidth):
-            x0 = np.uint32(np.floor(xRatio * j)) + 1 if j > 0 else 0
-            x1 = np.uint32(np.floor(xRatio * j)) + 2
-            x2 = np.uint32(np.ceil(xRatio * j)) + 2
-            x3 = np.uint32(np.ceil(xRatio * j)) + 3
-            y0 = np.uint32(np.floor(yRatio * i)) + 1 if i > 0 else 0
-            y1 = np.uint32(np.floor(yRatio * i)) + 2
-            y2 = np.uint32(np.ceil(yRatio * i)) + 2
-            y3 = np.uint32(np.ceil(yRatio * i)) + 3
-            #print(x0,x1,x2,x3)
-            #print(y0,y1,y2,y3)
-            #print()
-            p00,p10,p20,p30 = img[y0,x0], img[y0,x1], img[y0,x2], img[y0,x3]
-            p01,p11,p21,p31 = img[y1,x0], img[y1,x1], img[y1,x2], img[y1,x3]
-            p02,p12,p22,p32 = img[y2,x0], img[y2,x1], img[y2,x2], img[y2,x3]
-            p03,p13,p23,p33 = img[y3,x0], img[y3,x1], img[y3,x2], img[y3,x3]
-            
-            deltaX = x2 - x1
-            #deltaX = ((xRatio * j) + 2) - x1
-            deltaY = y2 - y1
-            #deltaY = ((yRatio * i) + 2) - y1
-            #print(p00,p10,p20,p30)
-            #print()
-            #imgScaled[i,j] = _computeSpline_(_computeSpline_(p00,p10,p20,p30, deltaX), _computeSpline_(p01,p11,p21,p31,deltaX),_computeSpline_(p02,p12,p22,p32,deltaX),_computeSpline_(p03,p13,p23,p33,deltaX),deltaY)
-            imgScaled[i,j] = _computeSpline_(_computeSpline_(p00,p01,p02,p03,deltaY),_computeSpline_(p10,p11,p12,p13,deltaY),_computeSpline_(p20,p21,p22,p23,deltaY),\
-                                             _computeSpline_(p30,p31,p32,p33,),deltaX)
-            print()
-    img = np.array(imgScaled, dtype=np.uint8)
-    return img
-'''
 # Interpolation kernel
 def _u(s, a):
     if (abs(s) >= 0) & (abs(s) <= 1):
@@ -247,7 +199,7 @@ def bicubic(img, ratio):
                 y4 = np.floor(y) + 2 - y
                   
                 # make the x matrix, the pixelMatrix, and the yMatrix here. in the paper they are denoted F(u), C and F(v)
-                #For some reason, changing the variable names breaks line 265.
+                #For some reason, changing the variable names breaks line 209.
                 mat_l = np.matrix([[_u(x1, a), _u(x2, a), _u(x3, a), _u(x4, a)]])
                 mat_m = np.matrix([[img[int(y-y1), int(x-x1), c],img[int(y-y2), int(x-x1), c],img[int(y+y3), int(x-x1), c],img[int(y+y4), int(x-x1), c]],
                                    [img[int(y-y1), int(x-x2), c],img[int(y-y2), int(x-x2), c],img[int(y+y3), int(x-x2), c],img[int(y+y4), int(x-x2), c]],
