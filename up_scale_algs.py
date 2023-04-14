@@ -151,7 +151,7 @@ def _u(s, a):
   
   
 # Padding
-def _padding(img, H, W, C):
+def _padding_(img, H, W, C):
     zimg = np.zeros((H+4, W+4, C))
     zimg[2:H+2, 2:W+2, :C] = img
       
@@ -175,7 +175,7 @@ def bicubic(img, ratio):
     # Here H = Height, W = weight,
     # C = Number of channels if the 
     # image is coloured.
-    img = _padding(img, H, W, C) / 255.0
+    img = _padding_(img, H, W, C) / 255.0
       
     # Create new image
     dH = np.uint32(np.floor(H*ratio))
@@ -209,3 +209,48 @@ def bicubic(img, ratio):
                 dst[j, i, c] = np.dot(np.dot(mat_l, mat_m), mat_r)
     return dst
   
+
+#_wd calculates the distance between the colors of two pixels.
+def _wd_(p1, p2):
+    b,g,r = abs(p1[0] - p2[0]), abs(p1[1] - p2[1]), abs(p1[2] - p2[2]) 
+    y = abs(r*0.299 + g*0.587 + b*0.144)
+    u = abs(r*-0.169 - g*0.331 + b*0.500)
+    v = abs(r*0.500 - g*0.419 - b*0.081)
+    return (48*y + 7*u + 6*v)
+
+def testXbr(img):
+    print(_wd_(img[2,2],img[3,3]))
+def _xbrInterp_(e,f,h):
+    newColor = f if(_wd_(e,f) <= _wd_(e,h)) else h
+    return .5*e + .5*newColor
+'''
+description of the algorithm can be found here: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 
+Pixels are represented in the following format
+       |A1|B1|C1|
+    |A0|A |B |C |C4|
+    |D0|D |E |F |F4|
+    |G0|G |H |I |I4|
+       |G5|H5|I5|  
+Consider E as the central pixel.'''
+def xBR(img, Iterations=1):
+    for k in range(Iterations):
+        img = _padding_(img, len(img)+1, len(img[1])+1, 3)
+        imgScaled = np.zeros((len(img) *2, len(img[1]) * 2,3), dtype=np.uint8)
+        ratio = 1/2
+        for row in range(len(imgScaled)):
+            for col in range(len(imgScaled[1])):
+                x,y = np.uint32(np.floor(col * ratio) + 2), np.uint32(np.floor(row * ratio) + 2)
+                a1, b1, c1 = img[y-2,x-1], img[y-2,x], img[y-2,x+1]
+                a0, a, b, c, c4 = img[y-1,x-2], img[y-1,x-1], img[y-1,x], img[y-1,x+1], img[y-1,x+2]
+                d0, d, e, f ,f4 = img[y,x-2], img[y,x-1], img[y,x], img[y,x+1], img[y,x+2]
+                g0, g, h, i, i4 = img[y+1,x-2], img[y+1,x-1], img[y+1,x], img[y+1, x+1], img[y+1,x+2]
+                g5, h5, i5 = img[y+2,x-1], img[y+2, x], img[y+2,x+1] 
+                edge1 = _wd_(e,c) + _wd_(e,g) + _wd_(i,f4) + _wd_(i,h5) + 4*_wd_(h,f)
+                edge2 = _wd_(h,d) + _wd_(h,i5) + _wd_(f,i4) + _wd_(f,b) + 4*_wd_(e,i)
+                print(edge1, edge2)
+                if(edge1 < edge2):
+                    imgScaled[row,col] = _xbrInterp_(e,f,h)
+                else:
+                    imgScaled[row,col] = e
+        img = np.array(imgScaled, dtype = np.uitn8)
+    return img
