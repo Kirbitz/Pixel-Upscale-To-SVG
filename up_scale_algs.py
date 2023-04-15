@@ -234,12 +234,15 @@ Pixels are represented in the following format
 Consider E as the central pixel.'''
 def xBR(img, Iterations=1):
     for k in range(Iterations):
-        img = _padding_(img, len(img)+1, len(img[1])+1, 3)
+        padded = np.zeros((len(img) + 6, len(img[1]) + 6,3), dtype=np.uint8)
+        padded[3:-3,3:-3]= img
         imgScaled = np.zeros((len(img) *2, len(img[1]) * 2,3), dtype=np.uint8)
+        img = padded
+        
         ratio = 1/2
         for row in range(len(imgScaled)):
             for col in range(len(imgScaled[1])):
-                x,y = np.uint32(np.floor(col * ratio) + 2), np.uint32(np.floor(row * ratio) + 2)
+                x,y = np.uint32(np.floor(col * ratio) + 3), np.uint32(np.floor(row * ratio) + 3)
                 a1, b1, c1 = img[y-2,x-1], img[y-2,x], img[y-2,x+1]
                 a0, a, b, c, c4 = img[y-1,x-2], img[y-1,x-1], img[y-1,x], img[y-1,x+1], img[y-1,x+2]
                 d0, d, e, f ,f4 = img[y,x-2], img[y,x-1], img[y,x], img[y,x+1], img[y,x+2]
@@ -247,10 +250,10 @@ def xBR(img, Iterations=1):
                 g5, h5, i5 = img[y+2,x-1], img[y+2, x], img[y+2,x+1] 
                 edge1 = _wd_(e,c) + _wd_(e,g) + _wd_(i,f4) + _wd_(i,h5) + 4*_wd_(h,f)
                 edge2 = _wd_(h,d) + _wd_(h,i5) + _wd_(f,i4) + _wd_(f,b) + 4*_wd_(e,i)
-                print(edge1, edge2)
+                
                 if(edge1 < edge2):
                     imgScaled[row,col] = _xbrInterp_(e,f,h)
                 else:
                     imgScaled[row,col] = e
-        img = np.array(imgScaled, dtype = np.uitn8)
+        img = np.array(imgScaled, dtype = np.uint8)
     return img
