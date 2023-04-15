@@ -1,5 +1,5 @@
 import numpy as np
-
+import cv2
 def three_or_more_equal(a, b, c, d):
     return (np.array_equal(a, b) and (np.array_equal(a, c) or np.array_equal(a, d))) or (np.array_equal(a, c) and np.array_equal(a, d)) or (np.array_equal(b, c) and np.array_equal(b, d))
 
@@ -212,17 +212,15 @@ def bicubic(img, ratio):
 
 #_wd calculates the distance between the colors of two pixels.
 def _wd_(p1, p2):
-    b,g,r = abs(p1[0] - p2[0]), abs(p1[1] - p2[1]), abs(p1[2] - p2[2]) 
-    y = abs(r*0.299 + g*0.587 + b*0.144)
-    u = abs(r*-0.169 - g*0.331 + b*0.500)
-    v = abs(r*0.500 - g*0.419 - b*0.081)
-    return (48*y + 7*u + 6*v)
+
+    return abs(48*(p1[0] - p2[0]) + 7*(p1[1] - p2[1]) + 6*(p1[2] - p2[2]))
 
 def testXbr(img):
     print(_wd_(img[2,2],img[3,3]))
 def _xbrInterp_(e,f,h):
     newColor = f if(_wd_(e,f) <= _wd_(e,h)) else h
-    return .5*e + .5*newColor
+    #return (0.5 * e) + (0.5 * newColor)
+    return newColor
 '''
 description of the algorithm can be found here: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 
 Pixels are represented in the following format
@@ -233,6 +231,7 @@ Pixels are represented in the following format
        |G5|H5|I5|  
 Consider E as the central pixel.'''
 def xBR(img, Iterations=1):
+    cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
     for k in range(Iterations):
         padded = np.zeros((len(img) + 6, len(img[1]) + 6,3), dtype=np.uint8)
         padded[3:-3,3:-3]= img
@@ -248,12 +247,26 @@ def xBR(img, Iterations=1):
                 d0, d, e, f ,f4 = img[y,x-2], img[y,x-1], img[y,x], img[y,x+1], img[y,x+2]
                 g0, g, h, i, i4 = img[y+1,x-2], img[y+1,x-1], img[y+1,x], img[y+1, x+1], img[y+1,x+2]
                 g5, h5, i5 = img[y+2,x-1], img[y+2, x], img[y+2,x+1] 
-                edge1 = _wd_(e,c) + _wd_(e,g) + _wd_(i,f4) + _wd_(i,h5) + 4*_wd_(h,f)
-                edge2 = _wd_(h,d) + _wd_(h,i5) + _wd_(f,i4) + _wd_(f,b) + 4*_wd_(e,i)
-                
-                if(edge1 < edge2):
+                edge1 = (_wd_(e,c) + _wd_(e,g) + _wd_(i,f4) + _wd_(i,h5) + 4*_wd_(h,f)) < (_wd_(h,d) + _wd_(h,i5) + _wd_(f,i4) + _wd_(f,b) + 4*_wd_(e,i))
+                edge2 = (_wd_(e,a) + _wd_(e,i) + _wd_(g,d0) + _wd_(g,h5) + 4*_wd_(h,d)) < (_wd_(h,f) + _wd_(h,g5) + _wd_(d,g0) + _wd_(d,b) + 4*_wd_(e,g))
+                edge3 = (_wd_(e,a) + _wd_(e,i) + _wd_(c,b1) + _wd_(c,f4) + 4*_wd_(f,b)) < (_wd_(h,f) + _wd_(f,c4) + _wd_(b,c1) + _wd_(d,b) + 4*_wd_(e,c))
+                edge4 = (_wd_(e,g) + _wd_(e,c) + _wd_(a,d0) + _wd_(a,b1) + 4*_wd_(d,b)) < (_wd_(h,d) + _wd_(d,a0) + _wd_(b,a1) + _wd_(f,b) + 4*_wd_(d,a))
+                interp = False
+                if(edge1 and e.all() != f.all() and e.all() != h.all()):
                     imgScaled[row,col] = _xbrInterp_(e,f,h)
-                else:
+                    interp = True
+                
+                if(edge2 and e.all() != d.all() and e.all() != h.all()):
+                    interp = True
+                    imgScaled[row,col] = _xbrInterp_(e,d,h)
+                if(edge3 and e.all() != f.all() and e.all() != b.all()):
+                    interp = True
+                    imgScaled[row,col] = _xbrInterp_(e,f,b)
+                if(edge4 and e.all() != d.all() and e.all() != b.all()):
+                    interp = True
+                    imgScaled[row,col] = _xbrInterp_(e,d,b)
+                if(not interp):
                     imgScaled[row,col] = e
         img = np.array(imgScaled, dtype = np.uint8)
+    cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
     return img
