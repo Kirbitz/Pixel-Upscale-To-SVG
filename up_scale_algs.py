@@ -151,21 +151,21 @@ def _u(s, a):
   
   
 # Padding
-def _padding_(img, H, W, C):
-    zimg = np.zeros((H+4, W+4, C))
-    zimg[2:H+2, 2:W+2, :C] = img
+def _padding_(img, H, W, C, add):
+    zimg = np.zeros((H+(2*add), W+(2*add), C))
+    zimg[add:H+add, add:W+add, :C] = img
       
     # Pad the first/last two col and row
-    zimg[2:H+2, 0:2, :C] = img[:, 0:1, :C]
-    zimg[H+2:H+4, 2:W+2, :] = img[H-1:H, :, :]
-    zimg[2:H+2, W+2:W+4, :] = img[:, W-1:W, :]
-    zimg[0:2, 2:W+2, :C] = img[0:1, :, :C]
+    zimg[add:H+add, 0:2, :C] = img[:, 0:1, :C]
+    zimg[H+add:H+(2*add), add:W+add, :] = img[H-1:H, :, :]
+    zimg[add:H+add, W+add:W+(2*add), :] = img[:, W-1:W, :]
+    zimg[0:add, add:W+add, :C] = img[0:1, :, :C]
       
     # Pad the missing eight points
-    zimg[0:2, 0:2, :C] = img[0, 0, :C]
-    zimg[H+2:H+4, 0:2, :C] = img[H-1, 0, :C]
-    zimg[H+2:H+4, W+2:W+4, :C] = img[H-1, W-1, :C]
-    zimg[0:2, W+2:W+4, :C] = img[0, W-1, :C]
+    zimg[0:add, 0:add, :C] = img[0, 0, :C]
+    zimg[H+add:H+(2*add), 0:add, :C] = img[H-1, 0, :C]
+    zimg[H+add:H+(2*add), W+add:W+(2*add), :C] = img[H-1, W-1, :C]
+    zimg[0:add, W+add:W+(2*add), :C] = img[0, W-1, :C]
     return zimg
 # Bicubic operation, the math for this operation can be found here:https://link.springer.com/article/10.1007/s11554-022-01254-8
 def bicubic(img, ratio):
@@ -175,7 +175,7 @@ def bicubic(img, ratio):
     # Here H = Height, W = weight,
     # C = Number of channels if the 
     # image is coloured.
-    img = _padding_(img, H, W, C) / 255.0
+    img = _padding_(img, H, W, C,2) / 255.0
       
     # Create new image
     dH = np.uint32(np.floor(H*ratio))
@@ -212,12 +212,14 @@ def bicubic(img, ratio):
 
 #_wd calculates the distance between the colors of two pixels.
 def _wd_(p1, p2):
-    y,u,v = abs(p1 - p2)
+    y,u,v = p1[0] - p2[0], p1[1] - p2[1], p1[2] - p2[2]
     return 48*y + 7*u + 6*v
 
 def _xbrInterp_(e,f,h):
-    newColor = f if(_wd_(e,f) <= _wd_(e,h)) else h
+    newColor = np.where(_wd_(e,f) <= _wd_(e,h), f,h)
     return (0.5 * e) + (0.5 * newColor)
+    #return newColor
+    
 '''
 description of the algorithm can be found here: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 
 Pixels are represented in the following format
@@ -230,10 +232,10 @@ Consider E as the central pixel.'''
 def xBR(img, Iterations=1):
     cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
     for k in range(Iterations):
-        padded = np.zeros((len(img) + 6, len(img[1]) + 6,3), dtype=np.uint8)
-        padded[3:-3,3:-3]= img
+        #padded = np.zeros((len(img) + 6, len(img[1]) + 6,3), dtype=np.uint8)
+        #padded[3:-3,3:-3]= img
         imgScaled = np.zeros((len(img) *2, len(img[1]) * 2,3), dtype=np.uint8)
-        img = padded
+        img = _padding_(img, len(img), len(img[1]), 3, 3)
         ratio = 1/2
         for row in range(len(imgScaled)):
             for col in range(len(imgScaled[1])):
@@ -278,4 +280,57 @@ def xBR(img, Iterations=1):
 
         img = np.array(imgScaled, dtype = np.uint8)
     cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
+    return img
+
+'''
+description of the algorithm can be found here: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 
+Pixels are represented in the following format
+       |A1|B1|C1|
+    |A0|A |B |C |C4|
+    |D0|D |E |F |F4|
+    |G0|G |H |I |I4|
+       |G5|H5|I5|  
+Consider E as the central pixel.'''
+def xBRvec(img, Iterations = 1):
+    cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+    for k in range(Iterations):
+        imgScaled = np.zeros((len(img), len(img[1]), 3), dtype=np.uint8)
+        img = _padding_(img,len(img),len(img[1]), 3, 3)
+        a1,b1,c1 = img[:-4, 1:-3], img[:-4, 2:-2], img[:-4, 3:-1]
+        a0,a,b,c,c4 = img[1:-3, :-4], img[1:-3, 1:-3], img[1:-3, 2:-2], img[1:-3, 3:-1], img[1:-3, 4:]
+        d0,d,e,f,f4 = img[2:-2, :-4], img[2:-2, 1:-3], img[2:-2, 2:-2], img[2:-2, 3:-1], img[2:-2, 4:]
+        g0,g,h,i,i4 = img[3:-1, :-4], img[3:-1, 1:-3], img[3:-1, 2:-2], img[3:-1, 3:-1], img[3:-1, 4:]
+        g5,h5,i5 = img[4:,1:-3], img[4:,2:-2],img[4:,3,-1]
+
+        #Setting Weights
+        ec, eg, if4, ih5, hf = _wd_(e,c), _wd_(e,g), _wd_(i,f4), _wd_(i,h5), _wd_(h,f)
+        hd, hi5, fi4, fb, ei = _wd_(h,d), _wd_(h,i5), _wd_(f,i4), _wd_(f,b), _wd_(e,i)
+        ea, gd0, gh5 = _wd_(e,a), _wd_(g,d0), _wd_(g,h5)
+        bd, dg0, hg5 = _wd_(b,d), _wd_(d,g0), _wd_(h,g5)
+        d0a, ab1 = _wd_(d0,a), _wd_(a,b1)
+        a0d, a1b = _wd_(a0,d), _wd_(a1,b)
+        b1c, cf4 = _wd_(b1,c), _wd_(c,f4)
+        bc1, fc4 = _wd_(b,c1), _wd_(f,c4)
+
+        #Bottom Right Edge Detection Rule
+        edge = ec + eg + if4 + ih5 + (4 * hf)
+        opposite = hd  + hi5 + fi4 + fb + (4 * ei)
+        e[edge<opposite] = _xbrInterp_(e,f,h)
+        
+        #Bottom Left Edge Detection Rule
+        edge = ea + ei + gd0 + gh5 + (4*hd)
+        opposite = bd + dg0 + hf + hg5 + (4*eg)
+        if(edge < opposite): e = _xbrInterp_(e,d,h)
+
+        #Top Left Edge Detection Rule
+        edge = ec + eg + d0a + ab1 + (4 * bd)
+        opposite = hd + fb + a0d + a1b + (4*ea)
+        if(edge < opposite): e = _xbrInterp_(e,d,b)
+    
+        #Top Right Edge Detection Rule
+        edge = ei + ea + b1c + cf4 + (4 * fb)
+        opposite = bd + bc1 + hf + fc4 + (4*ec)
+        if(edge < opposite): e = _xbrInterp_(e,b,f)
+        
+        img = np.array(e, dtype = np.uint8)
     return img
