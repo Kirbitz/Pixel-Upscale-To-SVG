@@ -212,15 +212,12 @@ def bicubic(img, ratio):
 
 #_wd calculates the distance between the colors of two pixels.
 def _wd_(p1, p2):
+    y,u,v = abs(p1 - p2)
+    return 48*y + 7*u + 6*v
 
-    return abs(48*(p1[0] - p2[0]) + 7*(p1[1] - p2[1]) + 6*(p1[2] - p2[2]))
-
-def testXbr(img):
-    print(_wd_(img[2,2],img[3,3]))
 def _xbrInterp_(e,f,h):
     newColor = f if(_wd_(e,f) <= _wd_(e,h)) else h
-    #return (0.5 * e) + (0.5 * newColor)
-    return newColor
+    return (0.5 * e) + (0.5 * newColor)
 '''
 description of the algorithm can be found here: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 
 Pixels are represented in the following format
@@ -237,7 +234,6 @@ def xBR(img, Iterations=1):
         padded[3:-3,3:-3]= img
         imgScaled = np.zeros((len(img) *2, len(img[1]) * 2,3), dtype=np.uint8)
         img = padded
-        
         ratio = 1/2
         for row in range(len(imgScaled)):
             for col in range(len(imgScaled[1])):
@@ -246,27 +242,40 @@ def xBR(img, Iterations=1):
                 a0, a, b, c, c4 = img[y-1,x-2], img[y-1,x-1], img[y-1,x], img[y-1,x+1], img[y-1,x+2]
                 d0, d, e, f ,f4 = img[y,x-2], img[y,x-1], img[y,x], img[y,x+1], img[y,x+2]
                 g0, g, h, i, i4 = img[y+1,x-2], img[y+1,x-1], img[y+1,x], img[y+1, x+1], img[y+1,x+2]
-                g5, h5, i5 = img[y+2,x-1], img[y+2, x], img[y+2,x+1] 
-                edge1 = (_wd_(e,c) + _wd_(e,g) + _wd_(i,f4) + _wd_(i,h5) + 4*_wd_(h,f)) < (_wd_(h,d) + _wd_(h,i5) + _wd_(f,i4) + _wd_(f,b) + 4*_wd_(e,i))
-                edge2 = (_wd_(e,a) + _wd_(e,i) + _wd_(g,d0) + _wd_(g,h5) + 4*_wd_(h,d)) < (_wd_(h,f) + _wd_(h,g5) + _wd_(d,g0) + _wd_(d,b) + 4*_wd_(e,g))
-                edge3 = (_wd_(e,a) + _wd_(e,i) + _wd_(c,b1) + _wd_(c,f4) + 4*_wd_(f,b)) < (_wd_(h,f) + _wd_(f,c4) + _wd_(b,c1) + _wd_(d,b) + 4*_wd_(e,c))
-                edge4 = (_wd_(e,g) + _wd_(e,c) + _wd_(a,d0) + _wd_(a,b1) + 4*_wd_(d,b)) < (_wd_(h,d) + _wd_(d,a0) + _wd_(b,a1) + _wd_(f,b) + 4*_wd_(d,a))
-                interp = False
-                if(edge1 and e.all() != f.all() and e.all() != h.all()):
-                    imgScaled[row,col] = _xbrInterp_(e,f,h)
-                    interp = True
+                g5, h5, i5 = img[y+2,x-1], img[y+2, x], img[y+2,x+1]
                 
-                if(edge2 and e.all() != d.all() and e.all() != h.all()):
-                    interp = True
-                    imgScaled[row,col] = _xbrInterp_(e,d,h)
-                if(edge3 and e.all() != f.all() and e.all() != b.all()):
-                    interp = True
-                    imgScaled[row,col] = _xbrInterp_(e,f,b)
-                if(edge4 and e.all() != d.all() and e.all() != b.all()):
-                    interp = True
-                    imgScaled[row,col] = _xbrInterp_(e,d,b)
-                if(not interp):
-                    imgScaled[row,col] = e
+                #Setting all weights
+                ec, eg, if4, ih5, hf = _wd_(e,c), _wd_(e,g), _wd_(i,f4), _wd_(i,h5), _wd_(h,f)
+                hd, hi5, fi4, fb, ei = _wd_(h,d), _wd_(h,i5), _wd_(f,i4), _wd_(f,b), _wd_(e,i)
+                ea, gd0, gh5 = _wd_(e,a), _wd_(g,d0), _wd_(g,h5)
+                bd, dg0, hg5 = _wd_(b,d), _wd_(d,g0), _wd_(h,g5)
+                d0a, ab1 = _wd_(d0,a), _wd_(a,b1)
+                a0d, a1b = _wd_(a0,d), _wd_(a1,b)
+                b1c, cf4 = _wd_(b1,c), _wd_(c,f4)
+                bc1, fc4 = _wd_(b,c1), _wd_(f,c4)
+
+                #Bottom Right Edge Detection Rule
+                edge = ec + eg + if4 + ih5 + (4 * hf)
+                opposite = hd  + hi5 + fi4 + fb + (4 * ei)
+                if(edge < opposite):e = _xbrInterp_(e,f,h)
+
+                #Bottom Left Edge Detection Rule
+                edge = ea + ei + gd0 + gh5 + (4*hd)
+                opposite = bd + dg0 + hf + hg5 + (4*eg)
+                if(edge < opposite): e = _xbrInterp_(e,d,h)
+
+                #Top Left Edge Detection Rule
+                edge = ec + eg + d0a + ab1 + (4 * bd)
+                opposite = hd + fb + a0d + a1b + (4*ea)
+                if(edge < opposite): e = _xbrInterp_(e,d,b)
+            
+                #Top Right Edge Detection Rule
+                edge = ei + ea + b1c + cf4 + (4 * fb)
+                opposite = bd + bc1 + hf + fc4 + (4*ec)
+                if(edge < opposite): e = _xbrInterp_(e,b,f)
+                
+                imgScaled[row,col] = e
+
         img = np.array(imgScaled, dtype = np.uint8)
     cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
     return img
