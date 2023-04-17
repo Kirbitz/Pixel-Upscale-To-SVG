@@ -117,28 +117,31 @@ def eagle_2x(img, Iterations=1):
     return img
 
 def bilinear(img,scaleFactor): #There is a vectorized version of this that runs faster
-    
-    height = len(img) * scaleFactor
-    width = len(img[1]) * scaleFactor
-    imgScaled = np.zeros((height, width, 3))
-    xRatio = float(len(img[1]) - 1) / (width - 1)
-    yRatio = float(len(img)-1) / (height - 1)
+    height, width = img.shape[:2]
+    height_scaled = height * scaleFactor
+    width_scaled = width * scaleFactor
+    img_scaled = np.zeros((height_scaled, width_scaled, 3))
+    x_ratio = float(width - 1) / (width_scaled - 1)
+    y_ratio = float(height-1) / (height_scaled - 1)
 
-    for i in range(height):
-        for j in range(width):
-            x1 = np.uint32(np.floor(xRatio * j ))
-            y1 = np.uint32(np.floor(yRatio * i))
-            xh = np.uint32(np.ceil(xRatio * j))
-            yh = np.uint32(np.ceil(yRatio * i))
-            xWeight = (xRatio * j) - x1
-            yWeight = (yRatio * i) - y1
-            a = img[y1, x1]
-            b = img[y1, xh]
-            c = img[yh, x1]
-            d = img[yh, xh]
-            pixel = a * (1 - xWeight) * (1 - yWeight) + b * xWeight * (1 - yWeight) + c * yWeight * (1-xWeight) + d * xWeight * yWeight
-            imgScaled[i,j] = pixel
-    img = np.array(imgScaled, dtype=np.uint8)
+    x1 = np.array([np.uint32(np.floor(x_ratio * np.arange(width_scaled)))]).repeat(height_scaled, axis=0)
+    y1 = np.uint32(np.floor(y_ratio * np.arange(height_scaled)[:, np.newaxis])).repeat(width_scaled, axis=1)
+    xh = np.array([np.uint32(np.ceil(x_ratio * np.arange(width_scaled)))]).repeat(height_scaled, axis=0)
+    yh = np.uint32(np.ceil(y_ratio * np.arange(height_scaled)[:, np.newaxis])).repeat(width_scaled, axis=1)
+
+    a = img[np.ix_(y1[:, 0], x1[0])]
+    b = img[np.ix_(y1[:, 0], xh[0])]
+    c = img[np.ix_(yh[:, 0], x1[0])]
+    d = img[np.ix_(yh[:, 0], xh[0])]
+
+    x_weight = np.array([(x_ratio * np.arange(width_scaled))]).repeat(height_scaled, axis=0) - x1
+    y_weight = (y_ratio * np.arange(height_scaled)[:, np.newaxis]).repeat(width_scaled, axis=1) - y1
+
+    img_scaled[:, :, 0] = a[:, :, 0] * (1-x_weight) * (1-y_weight) + b[:, :, 0] * x_weight * (1-y_weight) + c[:, :, 0] * y_weight * (1-x_weight) + d[:, :, 0] * x_weight * y_weight
+    img_scaled[:, :, 1] = a[:, :, 1] * (1-x_weight) * (1-y_weight) + b[:, :, 1] * x_weight * (1-y_weight) + c[:, :, 1] * y_weight * (1-x_weight) + d[:, :, 1] * x_weight * y_weight
+    img_scaled[:, :, 2] = a[:, :, 2] * (1-x_weight) * (1-y_weight) + b[:, :, 2] * x_weight * (1-y_weight) + c[:, :, 2] * y_weight * (1-x_weight) + d[:, :, 2] * x_weight * y_weight
+
+    img = np.array(img_scaled, dtype=np.uint8)
     return img
 
 # Interpolation kernel
