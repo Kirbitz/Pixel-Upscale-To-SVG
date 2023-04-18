@@ -3,8 +3,8 @@ import up_scale_algs as usa
 import svg as svg
 
 gui_name = "Image Window"
-img = cv2.imread("pixel_art/wikipedia_sample_img.png", cv2.IMREAD_COLOR)
-scale = 4
+img = cv2.imread("pixel_art/octopath_traveler_characters.png", cv2.IMREAD_COLOR)
+scale = 1
 scale_type = 0
 
 def image_upscale(x):
@@ -29,6 +29,7 @@ def main():
     cv2.namedWindow(gui_name)
     global img
     cv2.createTrackbar('Scale Type', gui_name, 0, 4, image_upscale)
+    cv2.createTrackbar('Create SVG', gui_name, 0, 1, )
     image_upscale(0)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
