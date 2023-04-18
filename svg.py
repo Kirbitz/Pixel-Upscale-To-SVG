@@ -1,9 +1,8 @@
 import cv2
 import numpy as np
 
-def convert_to_svg(img):
+def convert_to_svg(img, path):
     height, width = img.shape[:2]
-
     most_pixels = ""
     max_list = 0
     colors = {}
@@ -21,7 +20,7 @@ def convert_to_svg(img):
             max_list = len(colors[key])
             most_pixels = key
 
-    svg_file = open('svg/test.svg', 'w+')
+    svg_file = open(path, 'w+')
     svg_file.write(f'<html><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -0.5 {str(width)} {str(height)}" shape-rending="crispEdges">')
     
     for color in colors.keys():
