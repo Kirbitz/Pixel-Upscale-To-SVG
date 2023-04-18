@@ -16,15 +16,16 @@ def convert_to_svg(img, path):
                 colors[key] = [[i, j]]
 
     for key in colors.keys():
+        colors[key].append([-1, -1])
         if max_list < len(colors[key]):
             max_list = len(colors[key])
             most_pixels = key
 
     svg_file = open(path, 'w+')
-    svg_file.write(f'<html><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -0.5 {str(width)} {str(height)}" shape-rending="crispEdges">')
+    svg_file.write(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -0.5 {str(width)} {str(height)}" shape-rending="crispEdges">')
     
     for color in colors.keys():
-        if most_pixels == color:
+        if most_pixels == color and len(colors[color]) / (width * height) > 0.5:
             continue
         svg_file.write(f'<path stroke="{color}" d="')
         current = colors[color][0]
@@ -38,5 +39,5 @@ def convert_to_svg(img, path):
                 current = x_y
         svg_file.write('" />')
 
-    svg_file.write("</svg></html>")
+    svg_file.write("</svg>")
     svg_file.close()
