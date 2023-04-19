@@ -25,6 +25,8 @@ def convert_to_svg(img, path):
     svg_file.write(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -0.5 {str(width)} {str(height)}" shape-rending="crispEdges">')
     
     for color in colors.keys():
+        # This is a check to see if there is a background of pixels that can be removed from the svg render
+        # The threshold value can be modified but 50% seems to be sufficient for now
         if most_pixels == color and len(colors[color]) / (width * height) > 0.5:
             continue
         svg_file.write(f'<path stroke="{color}" d="')

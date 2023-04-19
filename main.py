@@ -4,7 +4,7 @@ import svg as svg
 
 gui_name = "Image Window"
 
-img_name = "fire_emblem_character_portraits"
+img_name = "octopath_traveler_characters"
 
 ANIMATED = False
 file_path = f"pixel_art/{img_name}.png"
