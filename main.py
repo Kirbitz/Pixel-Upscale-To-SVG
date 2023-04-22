@@ -25,9 +25,12 @@ def image_upscale(x):
     cv2.imshow(gui_name, img_show)
 
 def main():
-    cv2.namedWindow(gui_name)
-    cv2.createTrackbar('Scale Type', gui_name, 0, 4, image_upscale)
-    image_upscale(0)
+    #cv2.namedWindow(gui_name)
+    #cv2.createTrackbar('Scale Type', gui_name, 0, 4, image_upscale)
+    #image_upscale(0)
+    img = cv2.imread("pixel_art/wikipedia_sample_img.png", cv2.IMREAD_COLOR)
+    img = usa.xBRvec(img, Iterations =2)
+    cv2.imshow("xBR", img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
