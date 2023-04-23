@@ -3,9 +3,6 @@ import up_scale_algs as usa
 import svg as svg
 
 gui_name = "Image Window"
-<<<<<<< HEAD
-img = cv2.imread("pixel_art/fire_emblem_character_portraits.png", cv2.IMREAD_COLOR)
-=======
 
 img_name = "octopath_traveler_characters"
 
@@ -23,7 +20,6 @@ full_img = img.copy()
 sprites_per_row = img.shape[1] // SPRITE_WIDTH
 sprites_per_column = img.shape[0] // SPRITE_HEIGHT
 
->>>>>>> main
 scale = 1
 scale_type = 0
 
@@ -64,14 +60,7 @@ def create_svg(x):
 
 def main():
     cv2.namedWindow(gui_name)
-<<<<<<< HEAD
-    cv2.createTrackbar('Scale Type', gui_name, 0, 4, image_upscale)
-    image_upscale(0)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-=======
     global img
->>>>>>> main
     
     if not ANIMATED:
         update_image_upscale()
