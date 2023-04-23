@@ -235,63 +235,69 @@ Consider E as the central pixel.'''
 def xBRvec(img, Iterations = 1):
     cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
     for k in range(Iterations):
-        img = nearest_neighbor(img)
-        img = _padding_(img,len(img),len(img[1]), 3, 3)
+        imgScaled = np.zeros((len(img) * 2, len(img[1]) *2,3), dtype=np.uint8)
+        img = _padding_(img,len(img),len(img[1]), 3, 2)
         a1,b1,c1 = img[:-4, 1:-3], img[:-4, 2:-2], img[:-4, 3:-1]
         a0,a,b,c,c4 = img[1:-3, :-4], img[1:-3, 1:-3], img[1:-3, 2:-2], img[1:-3, 3:-1], img[1:-3, 4:]
         d0,d,e,f,f4 = img[2:-2, :-4], img[2:-2, 1:-3], img[2:-2, 2:-2], img[2:-2, 3:-1], img[2:-2, 4:]
         g0,g,h,i,i4 = img[3:-1, :-4], img[3:-1, 1:-3], img[3:-1, 2:-2], img[3:-1, 3:-1], img[3:-1, 4:]
         g5,h5,i5 = img[4:,1:-3], img[4:,2:-2],img[4:,3:-1]
-
+        
+        #setting the weighted distances
         ec, eg, if4, ih5, hf = _wd_(e,c), _wd_(e,g), _wd_(i,f4), _wd_(i,h5), _wd_(h,f)
         hd, hi5, fi4, fb, ei = _wd_(h,d), _wd_(h,i5), _wd_(f,i4), _wd_(f,b), _wd_(e,i)
+        ea,gd0, gh5 = _wd_(e,a),_wd_(g,d0), _wd_(g,h5)
+        bd, dg0, hg5 = _wd_(b,d), _wd_(d,g0), _wd_(h,g5)
+        d0a, ab1 =  _wd_(d0,a), _wd_(a,b1)
+        a0d, a1b = _wd_(a0,d), _wd_(a1,b)
+        b1c, cf4 =  _wd_(b1,c), _wd_(c,f4)
+        bc1, fc4 = _wd_(b,c1), _wd_(f,c4)
+
         #Bottom Right Edge Detection Rule
         edge = ec + eg + if4 + ih5 + (4 * hf)
         opposite = hd  + hi5 + fi4 + fb + (4 * ei)
+        print(edge)
         points = edge < opposite
         fMask = _wd_(e,f) <= _wd_(e,h)
         spots = np.logical_and(points, fMask)
-        notSpots = np.logical_not(spots)
+        notSpots = np.logical_and(points, np.logical_not(spots))
         e[spots] = np.add(np.multiply(.5,e[spots]),np.multiply(.5,f[spots]))
         e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,h[notSpots]))
-        
-        ea,ei, gd0, gh5 = _wd_(e,a), _wd_(e,i), _wd_(g,d0), _wd_(g,h5)
-        bd, dg0, hg5, eg = _wd_(b,d), _wd_(d,g0), _wd_(h,g5), _wd_(e,g)
+        imgScaled[1::2, 1::2] = e
+
         #Bottom Left Edge Detection Rule
         edge = ea + ei + gd0 + gh5 + (4*hd)
         opposite = bd + dg0 + hf + hg5 + (4*eg)
         points = edge<opposite
         dMask = _wd_(e,d) <= _wd_(e,h)
         spots = np.logical_and(points,dMask)
-        notSpots = np.logical_not(spots)
+        notSpots = np.logical_and(points, np.logical_not(spots))
         e[spots] = np.add(np.multiply(.5,e[spots]),np.multiply(.5,d[spots]))
         e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,h[notSpots]))
+        imgScaled[1::2, ::2] = e
 
-        ec, eg, d0a, ab1 = _wd_(e,c), _wd_(e,g), _wd_(d0,a), _wd_(a,b1)
-        a0d, a1b, ea = _wd_(a0,d), _wd_(a1,b), _wd_(e,a)
         #Top Left Edge Detection Rule
         edge = ec + eg + d0a + ab1 + (4 * bd)
         opposite = hd + fb + a0d + a1b + (4*ea)
         points = edge<opposite
         dMask = _wd_(e,d) <= _wd_(e,b)
         spots = np.logical_and(points, dMask)
-        notSpots = np.logical_not(spots)
+        notSpots = np.logical_and(points, np.logical_not(spots))
         e[spots] = np.add(np.multiply(.5,e[spots]),np.multiply(.5,d[spots]))
         e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,b[notSpots]))
+        imgScaled[:-1:2, :-1:2] = e
 
-        ei, ea, b1c, cf4 = _wd_(e,i), _wd_(e,a), _wd_(b1,c), _wd_(c,f4)
-        bc1, fc4, ec = _wd_(b,c1), _wd_(f,c4), _wd_(e,c)
         #Top Right Edge Detection Rule
         edge = ei + ea + b1c + cf4 + (4 * fb)
         opposite = bd + bc1 + hf + fc4 + (4*ec)
         points = edge<opposite
         bMask = _wd_(e,b) <= _wd_(e,f)
         spots = np.logical_and(points, bMask)
-        notSpots = np.logical_not(spots)
+        notSpots = np.logical_and(points, np.logical_not(spots))
         e[spots] = np.add(np.multiply(.5,e[spots]), np.multiply(.5,b[spots]))
         e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,f[notSpots]))
-
-        img = np.array(e, dtype = np.uint8)
+        imgScaled[:-1:2, 1::2] = e
+        img = np.array(imgScaled, dtype = np.uint8)
     cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
     return img
 '''
