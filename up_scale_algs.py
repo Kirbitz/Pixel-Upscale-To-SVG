@@ -213,14 +213,16 @@ def bicubic(img, ratio):
     return dst
   
 
-#_wd calculates the distance between the colors of two pixels.
+#_wd_ calculates the distance between the colors of two pixels.
 def _wd_(p1, p2):
     y,u,v = np.abs(np.subtract(p1[:,:,0],p2[:,:,0])), np.abs(np.subtract(p1[:,:,1],p2[:,:,1])),\
           np.abs(np.subtract(p1[:,:,2],p2[:,:,2]))
     return np.add(np.multiply(48,y),np.multiply(7,u), np.multiply(6,v))
-
+def _d_(p1,p2):
+    y,u,v = p1 - p2
+    return 41*y + 7 * u + 6 * v
 def _xbrInterp_(e,f,h):
-    FMask = _wd_(e,f) <= _wd_(e,h)
+    FMask = _d_(e,f) <= _d_(e,h)
     newColor = np.where(FMask, f,h)
     return np.add(np.multiply(.5,e),np.multiply(.5,newColor))
 '''
@@ -253,39 +255,6 @@ def xBRvec(img, Iterations = 1):
         b1c, cf4 =  _wd_(b1,c), _wd_(c,f4)
         bc1, fc4 = _wd_(b,c1), _wd_(f,c4)
 
-        #Bottom Right Edge Detection Rule
-        edge = ec + eg + if4 + ih5 + (4 * hf)
-        opposite = hd  + hi5 + fi4 + fb + (4 * ei)
-        print(edge)
-        points = edge < opposite
-        fMask = _wd_(e,f) <= _wd_(e,h)
-        spots = np.logical_and(points, fMask)
-        notSpots = np.logical_and(points, np.logical_not(spots))
-        e[spots] = np.add(np.multiply(.5,e[spots]),np.multiply(.5,f[spots]))
-        e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,h[notSpots]))
-        imgScaled[1::2, 1::2] = e
-
-        #Bottom Left Edge Detection Rule
-        edge = ea + ei + gd0 + gh5 + (4*hd)
-        opposite = bd + dg0 + hf + hg5 + (4*eg)
-        points = edge<opposite
-        dMask = _wd_(e,d) <= _wd_(e,h)
-        spots = np.logical_and(points,dMask)
-        notSpots = np.logical_and(points, np.logical_not(spots))
-        e[spots] = np.add(np.multiply(.5,e[spots]),np.multiply(.5,d[spots]))
-        e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,h[notSpots]))
-        imgScaled[1::2, ::2] = e
-
-        #Top Left Edge Detection Rule
-        edge = ec + eg + d0a + ab1 + (4 * bd)
-        opposite = hd + fb + a0d + a1b + (4*ea)
-        points = edge<opposite
-        dMask = _wd_(e,d) <= _wd_(e,b)
-        spots = np.logical_and(points, dMask)
-        notSpots = np.logical_and(points, np.logical_not(spots))
-        e[spots] = np.add(np.multiply(.5,e[spots]),np.multiply(.5,d[spots]))
-        e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,b[notSpots]))
-        imgScaled[:-1:2, :-1:2] = e
 
         #Top Right Edge Detection Rule
         edge = ei + ea + b1c + cf4 + (4 * fb)
@@ -296,7 +265,42 @@ def xBRvec(img, Iterations = 1):
         notSpots = np.logical_and(points, np.logical_not(spots))
         e[spots] = np.add(np.multiply(.5,e[spots]), np.multiply(.5,b[spots]))
         e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,f[notSpots]))
+
+        #Top Left Edge Detection Rule
+        edge = ec + eg + d0a + ab1 + (4 * bd)
+        opposite = hd + fb + a0d + a1b + (4*ea)
+        points = edge < opposite
+        dMask = _wd_(e,d) <= _wd_(e,b)
+        spots = np.logical_and(points, dMask)
+        notSpots = np.logical_and(points, np.logical_not(spots))
+        e[spots] = np.add(np.multiply(.5,e[spots]),np.multiply(.5,d[spots]))
+        e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,b[notSpots]))
+
+        #Bottom Left Edge Detection Rule
+        edge = ea + ei + gd0 + gh5 + (4*hd)
+        opposite = bd + dg0 + hf + hg5 + (4*eg)
+        points = edge<opposite
+        dMask = _wd_(e,d) <= _wd_(e,h)
+        spots = np.logical_and(points,dMask)
+        notSpots = np.logical_and(points, np.logical_not(spots))
+        e[spots] = np.add(np.multiply(.5,e[spots]),np.multiply(.5,d[spots]))
+        e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,h[notSpots]))
+
+        #Bottom Right Edge Detection Rule
+        edge = ec + eg + if4 + ih5 + (4 * hf)
+        opposite = hd  + hi5 + fi4 + fb + (4 * ei)
+        points = edge < opposite
+        fMask = _wd_(e,f) <= _wd_(e,h)
+        spots = np.logical_and(points, fMask)
+        notSpots = np.logical_and(points, np.logical_not(spots))
+        e[spots] = np.add(np.multiply(.5,e[spots]),np.multiply(.5,f[spots])) 
+        e[notSpots] = np.add(np.multiply(.5,e[notSpots]), np.multiply(.5,h[notSpots]))
+
+        imgScaled[1::2, 1::2] = e
         imgScaled[:-1:2, 1::2] = e
+        imgScaled[1::2, :-1:2] = e
+        imgScaled[:-1:2, :-1:2] = e
+
         img = np.array(imgScaled, dtype = np.uint8)
     cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
     return img
@@ -312,51 +316,50 @@ Consider E as the central pixel.'''
 def xBR(img, Iterations=1):
     cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
     for k in range(Iterations):
-        #padded = np.zeros((len(img) + 6, len(img[1]) + 6,3), dtype=np.uint8)
-        #padded[3:-3,3:-3]= img
         imgScaled = np.zeros((len(img) *2, len(img[1]) * 2,3), dtype=np.uint8)
-        img = _padding_(img, len(img), len(img[1]), 3, 3)
-        ratio = 1/2
-        for row in range(len(imgScaled)):
-            for col in range(len(imgScaled[1])):
-                x,y = np.uint32(np.floor(col * ratio) + 3), np.uint32(np.floor(row * ratio) + 3)
-                a1, b1, c1 = img[y-2,x-1], img[y-2,x], img[y-2,x+1]
+        img = _padding_(img, len(img), len(img[1]), 3, 2)
+        for y in range(2,len(img) - 4):
+            for x in range(2, len(img[0]) - 4):
+                #x,y = np.uint32(np.floor(col * ratio) + 3), np.uint32(np.floor(row * ratio) + 3)
+                a1, b1, c1 = img[y-2,x-1], img[y-2,x], img[y-2, x+1]
                 a0, a, b, c, c4 = img[y-1,x-2], img[y-1,x-1], img[y-1,x], img[y-1,x+1], img[y-1,x+2]
-                d0, d, e, f ,f4 = img[y,x-2], img[y,x-1], img[y,x], img[y,x+1], img[y,x+2]
-                g0, g, h, i, i4 = img[y+1,x-2], img[y+1,x-1], img[y+1,x], img[y+1, x+1], img[y+1,x+2]
-                g5, h5, i5 = img[y+2,x-1], img[y+2, x], img[y+2,x+1]
-                
+                d0, d, e, f, f4 = img[y,x-2], img[y,x-1], img[y,x], img[y,x+1], img[y,x+2]
+                g0, g, h, i, i4 = img[y+1,x-2], img[y+1,x-1], img[y+1,x], img[y+1,x+1], img[y+1,x+1]
+                g5, h5, i5 = img[y+2,x-1], img[y+2,x], img[y+2,x+1]
+
                 #Setting all weights
-                ec, eg, if4, ih5, hf = _wd_(e,c), _wd_(e,g), _wd_(i,f4), _wd_(i,h5), _wd_(h,f)
-                hd, hi5, fi4, fb, ei = _wd_(h,d), _wd_(h,i5), _wd_(f,i4), _wd_(f,b), _wd_(e,i)
-                ea, gd0, gh5 = _wd_(e,a), _wd_(g,d0), _wd_(g,h5)
-                bd, dg0, hg5 = _wd_(b,d), _wd_(d,g0), _wd_(h,g5)
-                d0a, ab1 = _wd_(d0,a), _wd_(a,b1)
-                a0d, a1b = _wd_(a0,d), _wd_(a1,b)
-                b1c, cf4 = _wd_(b1,c), _wd_(c,f4)
-                bc1, fc4 = _wd_(b,c1), _wd_(f,c4)
-
-                #Bottom Right Edge Detection Rule
-                edge = ec + eg + if4 + ih5 + (4 * hf)
-                opposite = hd  + hi5 + fi4 + fb + (4 * ei)
-                if(edge < opposite):e = _xbrInterp_(e,f,h)
-
-                #Bottom Left Edge Detection Rule
-                edge = ea + ei + gd0 + gh5 + (4*hd)
-                opposite = bd + dg0 + hf + hg5 + (4*eg)
-                if(edge < opposite): e = _xbrInterp_(e,d,h)
+                ec, eg, if4, ih5, hf = _d_(e,c), _d_(e,g), _d_(i,f4), _d_(i,h5), _d_(h,f)
+                hd, hi5, fi4, fb, ei = _d_(h,d), _d_(h,i5), _d_(f,i4), _d_(f,b), _d_(e,i)
+                ea, gd0, gh5 = _d_(e,a), _d_(g,d0), _d_(g,h5)
+                bd, dg0, hg5 = _d_(b,d), _d_(d,g0), _d_(h,g5)
+                d0a, ab1 = _d_(d0,a), _d_(a,b1)
+                a0d, a1b = _d_(a0,d), _d_(a1,b)
+                b1c, cf4 = _d_(b1,c), _d_(c,f4)
+                bc1, fc4 = _d_(b,c1), _d_(f,c4)
 
                 #Top Left Edge Detection Rule
                 edge = ec + eg + d0a + ab1 + (4 * bd)
                 opposite = hd + fb + a0d + a1b + (4*ea)
-                if(edge < opposite): e = _xbrInterp_(e,d,b)
+                if(edge < opposite): imgScaled[y * 2, x * 2] = _xbrInterp_(e,d,b)
+                else: imgScaled[y*2, x*2] = e
             
                 #Top Right Edge Detection Rule
                 edge = ei + ea + b1c + cf4 + (4 * fb)
                 opposite = bd + bc1 + hf + fc4 + (4*ec)
-                if(edge < opposite): e = _xbrInterp_(e,b,f)
-                
-                imgScaled[row,col] = e
+                if(edge < opposite): imgScaled[y * 2, (x * 2) + 1] = _xbrInterp_(e,b,f)
+                else: imgScaled[y*2, (x*2) + 1] = e
+
+                #Bottom Left Edge Detection Rule
+                edge = ea + ei + gd0 + gh5 + (4*hd)
+                opposite = bd + dg0 + hf + hg5 + (4*eg)
+                if(edge < opposite): imgScaled[(y * 2) + 1, x * 2] = _xbrInterp_(e,d,h)
+                else: imgScaled[(y*2) + 1, x * 2] = e
+
+                #Bottom Right Edge Detection Rule
+                edge = ec + eg + if4 + ih5 + (4 * hf)
+                opposite = hd  + hi5 + fi4 + fb + (4 * ei)
+                if(edge < opposite): imgScaled[(y * 2) + 1, (x * 2) + 1] = _xbrInterp_(e,f,h)
+                else: imgScaled[(y*2) + 1, (x*2) + 1] = e
 
         img = np.array(imgScaled, dtype = np.uint8)
     cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
