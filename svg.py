@@ -42,4 +42,3 @@ def convert_to_svg(img, path):
 
     svg_file.write("</svg>")
     svg_file.close()
-
