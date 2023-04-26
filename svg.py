@@ -1,6 +1,3 @@
-import cv2
-import numpy as np
-
 def convert_to_svg(img, path):
     height, width = img.shape[:2]
     most_pixels = ""
@@ -21,9 +18,11 @@ def convert_to_svg(img, path):
             max_list = len(colors[key])
             most_pixels = key
 
-    svg_file = open(path, 'w+')
-    svg_file.write(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -0.5 {str(width)} {str(height)}" shape-rending="crispEdges">')
-    
+    svg_file = open(path, "w+")
+    svg_file.write(
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -0.5 {str(width)} {str(height)}" shape-rending="crispEdges">'
+    )
+
     for color in colors.keys():
         # This is a check to see if there is a background of pixels that can be removed from the svg render
         # The threshold value can be modified but 50% seems to be sufficient for now
