@@ -219,17 +219,6 @@ def __wd(p1, p2):
           np.abs(np.subtract(p1[:,:,2],p2[:,:,2]))
     return np.add(np.multiply(48,y),np.multiply(7,u), np.multiply(6,v))
 
-#Same as __wd but for the non-vecorized version of xBR
-def __d(p1,p2):
-    y,u,v = p1 - p2
-    return 41*y + 7 * u + 6 * v
-
-#Color Interpolation for unvectorized xBR
-def __xbrInterp(e,f,h):
-    FMask = __d(e,f) <= __d(e,h)
-    newColor = np.where(FMask, f,h)
-    return np.add(np.multiply(.5,e),np.multiply(.5,newColor))
-
 #Color Interpolation for Vectorized xBR
 def __blendColors(edge, opposite, e, c1,c2):
     edr = edge<opposite
@@ -300,66 +289,6 @@ def xBRvec(img, Iterations = 1):
         imgScaled[:-1:2, 1::2] = e
         imgScaled[1::2, :-1:2] = e
         imgScaled[:-1:2, :-1:2] = e
-
-        img = np.array(imgScaled, dtype = np.uint8)
-    cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
-    return img
-'''
-description of the algorithm can be found here: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 
-Pixels are represented in the following format
-       |A1|B1|C1|
-    |A0|A |B |C |C4|
-    |D0|D |E |F |F4|
-    |G0|G |H |I |I4|
-       |G5|H5|I5|  
-Consider E as the central pixel.'''
-def xBR(img, Iterations=1):
-    cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-    for k in range(Iterations):
-        imgScaled = np.zeros((len(img) *2, len(img[1]) * 2,3), dtype=np.uint8)
-        img = __padding(img, len(img), len(img[1]), 3, 2)
-        for y in range(2,len(img) - 4):
-            for x in range(2, len(img[0]) - 4):
-                #x,y = np.uint32(np.floor(col * ratio) + 3), np.uint32(np.floor(row * ratio) + 3)
-                a1, b1, c1 = img[y-2,x-1], img[y-2,x], img[y-2, x+1]
-                a0, a, b, c, c4 = img[y-1,x-2], img[y-1,x-1], img[y-1,x], img[y-1,x+1], img[y-1,x+2]
-                d0, d, e, f, f4 = img[y,x-2], img[y,x-1], img[y,x], img[y,x+1], img[y,x+2]
-                g0, g, h, i, i4 = img[y+1,x-2], img[y+1,x-1], img[y+1,x], img[y+1,x+1], img[y+1,x+1]
-                g5, h5, i5 = img[y+2,x-1], img[y+2,x], img[y+2,x+1]
-
-                #Setting all weights
-                ec, eg, if4, ih5, hf = __d(e,c), __d(e,g), __d(i,f4), __d(i,h5), __d(h,f)
-                hd, hi5, fi4, fb, ei = __d(h,d), __d(h,i5), __d(f,i4), __d(f,b), __d(e,i)
-                ea, gd0, gh5 = __d(e,a), __d(g,d0), __d(g,h5)
-                bd, dg0, hg5 = __d(b,d), __d(d,g0), __d(h,g5)
-                d0a, ab1 = __d(d0,a), __d(a,b1)
-                a0d, a1b = __d(a0,d), __d(a1,b)
-                b1c, cf4 = __d(b1,c), __d(c,f4)
-                bc1, fc4 = __d(b,c1), __d(f,c4)
-
-                #Top Left Edge Detection Rule
-                edge = ec + eg + d0a + ab1 + (4 * bd)
-                opposite = hd + fb + a0d + a1b + (4*ea)
-                if(edge < opposite): imgScaled[y * 2, x * 2] = __xbrInterp(e,d,b)
-                else: imgScaled[y*2, x*2] = e
-                
-                #Top Right Edge Detection Rule
-                edge = ei + ea + b1c + cf4 + (4 * fb)
-                opposite = bd + bc1 + hf + fc4 + (4*ec)
-                if(edge < opposite): imgScaled[y * 2, (x * 2) + 1] = __xbrInterp(e,b,f)
-                else: imgScaled[y*2, (x*2) + 1] = e
-
-                #Bottom Left Edge Detection Rule
-                edge = ea + ei + gd0 + gh5 + (4*hd)
-                opposite = bd + dg0 + hf + hg5 + (4*eg)
-                if(edge < opposite): imgScaled[(y * 2) + 1, x * 2] = __xbrInterp(e,d,h)
-                else: imgScaled[(y*2) + 1, x * 2] = e
-
-                #Bottom Right Edge Detection Rule
-                edge = ec + eg + if4 + ih5 + (4 * hf)
-                opposite = hd  + hi5 + fi4 + fb + (4 * ei)
-                if(edge < opposite): imgScaled[(y * 2) + 1, (x * 2) + 1] = __xbrInterp(e,f,h)
-                else: imgScaled[(y*2) + 1, (x*2) + 1] = e
 
         img = np.array(imgScaled, dtype = np.uint8)
     cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
