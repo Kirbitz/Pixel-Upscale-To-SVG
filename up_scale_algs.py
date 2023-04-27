@@ -241,7 +241,7 @@ Pixels are represented in the following format
     |G0|G |H |I |I4|
        |G5|H5|I5|  
 Consider E as the central pixel.'''
-def xBRvec(img, Iterations = 1):
+def xBR(img, Iterations = 1):
     cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
     for k in range(Iterations):
         imgScaled = np.zeros((len(img) * 2, len(img[1]) *2,3), dtype=np.uint8)
