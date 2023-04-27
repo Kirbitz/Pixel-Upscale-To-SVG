@@ -59,11 +59,10 @@ def update_image_upscale():
         img_show = usa.eagle_2x(img, Iterations=scale)
     elif scale_type == 4:
         img_show = usa.bilinear(img, 2**scale)
-    '''elif scale_type == 5:
+    elif scale_type == 5:
         img_show = usa.xBR(img, Iterations=scale)
     elif scale_type == 6:
         img_show = usa.bicubic(img, 2**scale)
-    '''
     cv2.imshow(gui_name, img_show)
 
 
