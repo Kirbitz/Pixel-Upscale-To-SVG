@@ -4,12 +4,12 @@ import svg as svg
 
 gui_name = "Image Window"
 
-img_name = "octopath_traveler_characters"
+img_name = "little_mario_run_cycle"
 
 ANIMATED = False
 file_path = f"pixel_art/{img_name}.png"
 SPRITE_WIDTH, SPRITE_HEIGHT = 16, 16
-FPS = 5
+FPS = 10
 FRAME_TIME = 1000 // FPS  # milliseconds per frame of animation
 currentFrame = -1
 
@@ -20,7 +20,7 @@ full_img = img.copy()
 sprites_per_row = img.shape[1] // SPRITE_WIDTH
 sprites_per_column = img.shape[0] // SPRITE_HEIGHT
 
-scale = 1
+scale = 2
 scale_type = 0
 
 
@@ -59,7 +59,11 @@ def update_image_upscale():
         img_show = usa.eagle_2x(img, Iterations=scale)
     elif scale_type == 4:
         img_show = usa.bilinear(img, 2**scale)
-
+    '''elif scale_type == 5:
+        img_show = usa.xBR(img, Iterations=scale)
+    elif scale_type == 6:
+        img_show = usa.bicubic(img, 2**scale)
+    '''
     cv2.imshow(gui_name, img_show)
 
 
@@ -76,7 +80,7 @@ def main():
     if not ANIMATED:
         update_image_upscale()
         cv2.createTrackbar(
-            "Scale Type", gui_name, 0, 4, update_scale_type
+            "Scale Type", gui_name, 0, 6, update_scale_type
         )  # create the trackbar after showing the image to ensure trackbar fits within window
         cv2.createTrackbar("Create SVG", gui_name, 0, 1, create_svg)
         cv2.waitKey(0)
@@ -84,7 +88,7 @@ def main():
         return
 
     update_image_frame(0)
-    cv2.createTrackbar("Scale Type", gui_name, 0, 4, update_scale_type)
+    cv2.createTrackbar("Scale Type", gui_name, 0, 6, update_scale_type)
 
     # animation loop (runs while main window is open)
     while cv2.getWindowProperty(gui_name, cv2.WND_PROP_VISIBLE) == 1:
