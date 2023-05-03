@@ -173,11 +173,24 @@ def bilinear(
 
 # Interpolation kernel
 def _u(s, a):
-    if (np.abs(s) >= 0) & (np.abs(s) <= 1):
+    test = np.abs(s)
+    temp = np.zeros(s.shape, dtype=np.float32)
+    mod1 = s[np.logical_and(np.abs(s) >= 0, np.abs(s) <= 1)]
+    temp[np.logical_and(np.abs(s) >= 0, np.abs(s) <= 1)] = (
+        (a + 2) * (np.abs(mod1) ** 3) - (a + 3) * (np.abs(mod1) ** 2) + 1
+    )
+    mod2 = s[np.logical_and(np.abs(s) > 1, np.abs(s) <= 2)]
+    temp[np.logical_and(np.abs(s) > 1, np.abs(s) <= 2)] = (
+        a * (np.abs(mod2) ** 3)
+        - (5 * a) * (np.abs(mod2) ** 2)
+        + (8 * a) * np.abs(mod2)
+        - 4 * a
+    )
+    """ if (np.abs(s) >= 0) & (np.abs(s) <= 1):
         return (a + 2) * (abs(s) ** 3) - (a + 3) * (abs(s) ** 2) + 1
     elif (abs(s) > 1) & (abs(s) <= 2):
         return a * (abs(s) ** 3) - (5 * a) * (abs(s) ** 2) + (8 * a) * abs(s) - 4 * a
-    return 0
+    return 0 """
 
 
 # Padding
