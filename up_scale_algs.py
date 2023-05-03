@@ -276,33 +276,33 @@ def bicubic(img, ratio):
     for c in range(C):
         dst[:, :, c] = (
             (
-                manip_x1 * pixel_pos1[:, :, c]
-                + manip_x2 * pixel_pos2[:, :, c]
-                + manip_x3 * pixel_pos3[:, :, c]
-                + manip_x4 * pixel_pos4[:, :, c]
+                manip_y1 * pixel_pos1[:, :, c]
+                + manip_y2 * pixel_pos2[:, :, c]
+                + manip_y3 * pixel_pos3[:, :, c]
+                + manip_y4 * pixel_pos4[:, :, c]
             )
-            * manip_y1
+            * manip_x1
             + (
-                manip_x1 * pixel_pos5[:, :, c]
-                + manip_x2 * pixel_pos6[:, :, c]
-                + manip_x3 * pixel_pos7[:, :, c]
-                + manip_x4 * pixel_pos8[:, :, c]
+                manip_y1 * pixel_pos5[:, :, c]
+                + manip_y2 * pixel_pos6[:, :, c]
+                + manip_y3 * pixel_pos7[:, :, c]
+                + manip_y4 * pixel_pos8[:, :, c]
             )
-            * manip_y2
+            * manip_x2
             + (
-                manip_x1 * pixel_pos9[:, :, c]
-                + manip_x2 * pixel_pos10[:, :, c]
-                + manip_x3 * pixel_pos11[:, :, c]
-                + manip_x4 * pixel_pos12[:, :, c]
+                manip_y1 * pixel_pos9[:, :, c]
+                + manip_y2 * pixel_pos10[:, :, c]
+                + manip_y3 * pixel_pos11[:, :, c]
+                + manip_y4 * pixel_pos12[:, :, c]
             )
-            * manip_y3
+            * manip_x3
             + (
-                manip_x1 * pixel_pos13[:, :, c]
-                + manip_x2 * pixel_pos14[:, :, c]
-                + manip_x3 * pixel_pos15[:, :, c]
-                + manip_x4 * pixel_pos16[:, :, c]
+                manip_y1 * pixel_pos13[:, :, c]
+                + manip_y2 * pixel_pos14[:, :, c]
+                + manip_y3 * pixel_pos15[:, :, c]
+                + manip_y4 * pixel_pos16[:, :, c]
             )
-            * manip_y4
+            * manip_x4
         )
 
     return dst
