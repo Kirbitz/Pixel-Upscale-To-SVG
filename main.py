@@ -4,7 +4,7 @@ import svg as svg
 
 gui_name = "Image Window"
 
-img_name = "little_mario_run_cycle"
+img_name = "wikipedia_sample_img"
 
 ANIMATED = False
 file_path = f"pixel_art/{img_name}.png"

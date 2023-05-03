@@ -186,6 +186,7 @@ def _u(s, a):
         + (8 * a) * np.abs(mod2)
         - 4 * a
     )
+    return temp
     """ if (np.abs(s) >= 0) & (np.abs(s) <= 1):
         return (a + 2) * (abs(s) ** 3) - (a + 3) * (abs(s) ** 2) + 1
     elif (abs(s) > 1) & (abs(s) <= 2):
@@ -228,7 +229,10 @@ def bicubic(img, ratio):
     dst = np.zeros((dH, dW, 3))
     h = 1 / ratio
 
-    x, y = np.arange(dW) * h + 2, np.arange(dH) * h + 2
+    x, y = (
+        np.array([np.arange(dW)]).repeat(dH, axis=0) * h + 2,
+        np.arange(dH)[:, np.newaxis].repeat(dW, axis=1) * h + 2,
+    )
     x1 = 1 + x - np.floor(x)
     x2 = x - np.floor(x)
     x3 = np.floor(x) + 1 - x
@@ -239,57 +243,68 @@ def bicubic(img, ratio):
     y3 = np.floor(y) + 1 - y
     y4 = np.floor(y) + 2 - y
 
-    test = _u(x1, a)
+    manip_x1 = _u(x1, a)
+    manip_x2 = _u(x2, a)
+    manip_x3 = _u(x3, a)
+    manip_x4 = _u(x4, a)
+
+    manip_y1 = _u(y1, a)
+    manip_y2 = _u(y2, a)
+    manip_y3 = _u(y3, a)
+    manip_y4 = _u(y4, a)
+
+    pixel_pos1 = img[np.ix_((y - y1).astype(int)[:, 0], (x - x1).astype(int)[0])]
+    pixel_pos2 = img[np.ix_((y - y2).astype(int)[:, 0], (x - x1).astype(int)[0])]
+    pixel_pos3 = img[np.ix_((y + y3).astype(int)[:, 0], (x - x1).astype(int)[0])]
+    pixel_pos4 = img[np.ix_((y + y4).astype(int)[:, 0], (x - x1).astype(int)[0])]
+
+    pixel_pos5 = img[np.ix_((y - y1).astype(int)[:, 0], (x - x2).astype(int)[0])]
+    pixel_pos6 = img[np.ix_((y - y2).astype(int)[:, 0], (x - x2).astype(int)[0])]
+    pixel_pos7 = img[np.ix_((y + y3).astype(int)[:, 0], (x - x2).astype(int)[0])]
+    pixel_pos8 = img[np.ix_((y + y4).astype(int)[:, 0], (x - x2).astype(int)[0])]
+
+    pixel_pos9 = img[np.ix_((y - y1).astype(int)[:, 0], (x + x3).astype(int)[0])]
+    pixel_pos10 = img[np.ix_((y - y2).astype(int)[:, 0], (x + x3).astype(int)[0])]
+    pixel_pos11 = img[np.ix_((y + y3).astype(int)[:, 0], (x + x3).astype(int)[0])]
+    pixel_pos12 = img[np.ix_((y + y4).astype(int)[:, 0], (x + x3).astype(int)[0])]
+
+    pixel_pos13 = img[np.ix_((y - y1).astype(int)[:, 0], (x + x4).astype(int)[0])]
+    pixel_pos14 = img[np.ix_((y - y2).astype(int)[:, 0], (x + x4).astype(int)[0])]
+    pixel_pos15 = img[np.ix_((y + y3).astype(int)[:, 0], (x + x4).astype(int)[0])]
+    pixel_pos16 = img[np.ix_((y + y4).astype(int)[:, 0], (x + x4).astype(int)[0])]
 
     for c in range(C):
-        for j in range(dH):
-            for i in range(dW):
-                # Getting the coordinates of the
-                # nearby values
-                x, y = i * h + 2, j * h + 2
-                x1 = 1 + x - np.floor(x)
-                x2 = x - np.floor(x)
-                x3 = np.floor(x) + 1 - x
-                x4 = np.floor(x) + 2 - x
+        dst[:, :, c] = (
+            (
+                manip_x1 * pixel_pos1[:, :, c]
+                + manip_x2 * pixel_pos2[:, :, c]
+                + manip_x3 * pixel_pos3[:, :, c]
+                + manip_x4 * pixel_pos4[:, :, c]
+            )
+            * manip_y1
+            + (
+                manip_x1 * pixel_pos5[:, :, c]
+                + manip_x2 * pixel_pos6[:, :, c]
+                + manip_x3 * pixel_pos7[:, :, c]
+                + manip_x4 * pixel_pos8[:, :, c]
+            )
+            * manip_y2
+            + (
+                manip_x1 * pixel_pos9[:, :, c]
+                + manip_x2 * pixel_pos10[:, :, c]
+                + manip_x3 * pixel_pos11[:, :, c]
+                + manip_x4 * pixel_pos12[:, :, c]
+            )
+            * manip_y3
+            + (
+                manip_x1 * pixel_pos13[:, :, c]
+                + manip_x2 * pixel_pos14[:, :, c]
+                + manip_x3 * pixel_pos15[:, :, c]
+                + manip_x4 * pixel_pos16[:, :, c]
+            )
+            * manip_y4
+        )
 
-                y1 = 1 + y - np.floor(y)
-                y2 = y - np.floor(y)
-                y3 = np.floor(y) + 1 - y
-                y4 = np.floor(y) + 2 - y
-
-                # make the x matrix, the pixelMatrix, and the yMatrix here. in the paper they are denoted F(u), C and F(v)
-                # For some reason, changing the variable names breaks line 209.
-                mat_l = np.matrix([[_u(x1, a), _u(x2, a), _u(x3, a), _u(x4, a)]])
-                mat_m = np.matrix(
-                    [
-                        [
-                            img[int(y - y1), int(x - x1), c],
-                            img[int(y - y2), int(x - x1), c],
-                            img[int(y + y3), int(x - x1), c],
-                            img[int(y + y4), int(x - x1), c],
-                        ],
-                        [
-                            img[int(y - y1), int(x - x2), c],
-                            img[int(y - y2), int(x - x2), c],
-                            img[int(y + y3), int(x - x2), c],
-                            img[int(y + y4), int(x - x2), c],
-                        ],
-                        [
-                            img[int(y - y1), int(x + x3), c],
-                            img[int(y - y2), int(x + x3), c],
-                            img[int(y + y3), int(x + x3), c],
-                            img[int(y + y4), int(x + x3), c],
-                        ],
-                        [
-                            img[int(y - y1), int(x + x4), c],
-                            img[int(y - y2), int(x + x4), c],
-                            img[int(y + y3), int(x + x4), c],
-                            img[int(y + y4), int(x + x4), c],
-                        ],
-                    ]
-                )
-                mat_r = np.matrix([[_u(y1, a)], [_u(y2, a)], [_u(y3, a)], [_u(y4, a)]])
-                dst[j, i, c] = np.dot(np.dot(mat_l, mat_m), mat_r)
     return dst
 
 
