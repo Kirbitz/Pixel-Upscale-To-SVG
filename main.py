@@ -4,7 +4,7 @@ import svg as svg
 
 gui_name = "Image Window"
 
-img_name = "little_mario_run_cycle"
+img_name = "wikipedia_sample_img"
 
 ANIMATED = False
 file_path = f"pixel_art/{img_name}.png"
@@ -63,6 +63,8 @@ def update_image_upscale():
         img_show = usa.xBR(img, Iterations=scale)
     elif scale_type == 6:
         img_show = usa.bicubic(img, 2**scale)
+    elif scale_type == 7:
+        img_show = usa.rotsprite(img, Iterations=scale)
     cv2.imshow(gui_name, img_show)
 
 
@@ -79,7 +81,7 @@ def main():
     if not ANIMATED:
         update_image_upscale()
         cv2.createTrackbar(
-            "Scale Type", gui_name, 0, 6, update_scale_type
+            "Scale Type", gui_name, 0, 7, update_scale_type
         )  # create the trackbar after showing the image to ensure trackbar fits within window
         cv2.createTrackbar("Create SVG", gui_name, 0, 1, create_svg)
         cv2.waitKey(0)
@@ -87,7 +89,7 @@ def main():
         return
 
     update_image_frame(0)
-    cv2.createTrackbar("Scale Type", gui_name, 0, 6, update_scale_type)
+    cv2.createTrackbar("Scale Type", gui_name, 0, 7, update_scale_type)
 
     # animation loop (runs while main window is open)
     while cv2.getWindowProperty(gui_name, cv2.WND_PROP_VISIBLE) == 1:
