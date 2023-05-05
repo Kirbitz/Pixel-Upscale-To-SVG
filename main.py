@@ -4,7 +4,7 @@ import svg as svg
 
 gui_name = "Image Window"
 
-img_name = "little_mario_run_cycle"
+img_name = "wikipedia_sample_img"
 
 ANIMATED = False
 file_path = f"pixel_art/{img_name}.png"
@@ -60,9 +60,9 @@ def update_image_upscale():
     elif scale_type == 4:
         img_show = usa.bilinear(img, 2**scale)
     elif scale_type == 5:
-        img_show = usa.xBR(img, Iterations=scale)
-    elif scale_type == 6:
         img_show = usa.bicubic(img, 2**scale)
+    elif scale_type == 6:
+        img_show = usa.xBR(img, Iterations=scale)
     cv2.imshow(gui_name, img_show)
 
 
