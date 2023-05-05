@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 
+
 def three_or_more_equal(a, b, c, d):
     return np.logical_or(
         np.logical_and(
@@ -168,95 +169,164 @@ def bilinear(
 
     img = np.array(img_scaled, dtype=np.uint8)
     return img
+
+
 # Interpolation kernel
 def _u(s, a):
-    if (abs(s) >= 0) & (abs(s) <= 1):
-        return (a+2)*(abs(s)**3)-(a+3)*(abs(s)**2)+1
-    elif (abs(s) > 1) & (abs(s) <= 2):
-        return a*(abs(s)**3)-(5*a)*(abs(s)**2)+(8*a)*abs(s)-4*a
-    return 0
-  
-  
+    temp = np.zeros(s.shape, dtype=np.float32)
+    mod1 = s[np.logical_and(np.abs(s) >= 0, np.abs(s) <= 1)]
+    temp[np.logical_and(np.abs(s) >= 0, np.abs(s) <= 1)] = (
+        (a + 2) * (np.abs(mod1) ** 3) - (a + 3) * (np.abs(mod1) ** 2) + 1
+    )
+    mod2 = s[np.logical_and(np.abs(s) > 1, np.abs(s) <= 2)]
+    temp[np.logical_and(np.abs(s) > 1, np.abs(s) <= 2)] = (
+        a * (np.abs(mod2) ** 3)
+        - (5 * a) * (np.abs(mod2) ** 2)
+        + (8 * a) * np.abs(mod2)
+        - 4 * a
+    )
+    return temp
+
+
 # Padding
 def __padding(img, H, W, C, add):
-    zimg = np.zeros((H+(2*add), W+(2*add), C))
-    zimg[add:H+add, add:W+add, :C] = img
-      
+    zimg = np.zeros((H + (2 * add), W + (2 * add), C))
+    zimg[add : H + add, add : W + add, :C] = img
+
     # Pad the first/last two col and row
-    zimg[add:H+add, 0:2, :C] = img[:, 0:1, :C]
-    zimg[H+add:H+(2*add), add:W+add, :] = img[H-1:H, :, :]
-    zimg[add:H+add, W+add:W+(2*add), :] = img[:, W-1:W, :]
-    zimg[0:add, add:W+add, :C] = img[0:1, :, :C]
-      
+    zimg[add : H + add, 0:2, :C] = img[:, 0:1, :C]
+    zimg[H + add : H + (2 * add), add : W + add, :] = img[H - 1 : H, :, :]
+    zimg[add : H + add, W + add : W + (2 * add), :] = img[:, W - 1 : W, :]
+    zimg[0:add, add : W + add, :C] = img[0:1, :, :C]
+
     # Pad the missing eight points
     zimg[0:add, 0:add, :C] = img[0, 0, :C]
-    zimg[H+add:H+(2*add), 0:add, :C] = img[H-1, 0, :C]
-    zimg[H+add:H+(2*add), W+add:W+(2*add), :C] = img[H-1, W-1, :C]
-    zimg[0:add, W+add:W+(2*add), :C] = img[0, W-1, :C]
+    zimg[H + add : H + (2 * add), 0:add, :C] = img[H - 1, 0, :C]
+    zimg[H + add : H + (2 * add), W + add : W + (2 * add), :C] = img[H - 1, W - 1, :C]
+    zimg[0:add, W + add : W + (2 * add), :C] = img[0, W - 1, :C]
     return zimg
+
+
 # Bicubic operation, the math for this operation can be found here:https://link.springer.com/article/10.1007/s11554-022-01254-8
 def bicubic(img, ratio):
-    a= -.5
+    a = -0.5
     # Get image size
     H, W, C = img.shape
     # Here H = Height, W = weight,
-    # C = Number of channels if the 
+    # C = Number of channels if the
     # image is coloured.
-    img = __padding(img, H, W, C,2) / 255.0
-      
+    img = __padding(img, H, W, C, 2) / 255.0
+
     # Create new image
-    dH = np.uint32(np.floor(H*ratio))
-    dW = np.uint32(np.floor(W*ratio))
-    dst = np.zeros((dH, dW, 3))  
-    h = 1/ratio
+    dH = np.uint32(np.floor(H * ratio))
+    dW = np.uint32(np.floor(W * ratio))
+    dst = np.zeros((dH, dW, 3))
+    h = 1 / ratio
+
+    x, y = (
+        np.array([np.arange(dW)]).repeat(dH, axis=0) * h + 2,
+        np.arange(dH)[:, np.newaxis].repeat(dW, axis=1) * h + 2,
+    )
+    x1 = 1 + x - np.floor(x)
+    x2 = x - np.floor(x)
+    x3 = np.floor(x) + 1 - x
+    x4 = np.floor(x) + 2 - x
+
+    y1 = 1 + y - np.floor(y)
+    y2 = y - np.floor(y)
+    y3 = np.floor(y) + 1 - y
+    y4 = np.floor(y) + 2 - y
+
+    manip_x1 = _u(x1, a)
+    manip_x2 = _u(x2, a)
+    manip_x3 = _u(x3, a)
+    manip_x4 = _u(x4, a)
+
+    manip_y1 = _u(y1, a)
+    manip_y2 = _u(y2, a)
+    manip_y3 = _u(y3, a)
+    manip_y4 = _u(y4, a)
+
+    pixel_pos1 = img[np.ix_((y - y1).astype(int)[:, 0], (x - x1).astype(int)[0])]
+    pixel_pos2 = img[np.ix_((y - y2).astype(int)[:, 0], (x - x1).astype(int)[0])]
+    pixel_pos3 = img[np.ix_((y + y3).astype(int)[:, 0], (x - x1).astype(int)[0])]
+    pixel_pos4 = img[np.ix_((y + y4).astype(int)[:, 0], (x - x1).astype(int)[0])]
+
+    pixel_pos5 = img[np.ix_((y - y1).astype(int)[:, 0], (x - x2).astype(int)[0])]
+    pixel_pos6 = img[np.ix_((y - y2).astype(int)[:, 0], (x - x2).astype(int)[0])]
+    pixel_pos7 = img[np.ix_((y + y3).astype(int)[:, 0], (x - x2).astype(int)[0])]
+    pixel_pos8 = img[np.ix_((y + y4).astype(int)[:, 0], (x - x2).astype(int)[0])]
+
+    pixel_pos9 = img[np.ix_((y - y1).astype(int)[:, 0], (x + x3).astype(int)[0])]
+    pixel_pos10 = img[np.ix_((y - y2).astype(int)[:, 0], (x + x3).astype(int)[0])]
+    pixel_pos11 = img[np.ix_((y + y3).astype(int)[:, 0], (x + x3).astype(int)[0])]
+    pixel_pos12 = img[np.ix_((y + y4).astype(int)[:, 0], (x + x3).astype(int)[0])]
+
+    pixel_pos13 = img[np.ix_((y - y1).astype(int)[:, 0], (x + x4).astype(int)[0])]
+    pixel_pos14 = img[np.ix_((y - y2).astype(int)[:, 0], (x + x4).astype(int)[0])]
+    pixel_pos15 = img[np.ix_((y + y3).astype(int)[:, 0], (x + x4).astype(int)[0])]
+    pixel_pos16 = img[np.ix_((y + y4).astype(int)[:, 0], (x + x4).astype(int)[0])]
+
     for c in range(C):
-        for j in range(dH):
-            for i in range(dW):
-                # Getting the coordinates of the
-                # nearby values
-                x, y = i * h + 2, j * h + 2
-                x1 = 1 + x - np.floor(x)
-                x2 = x - np.floor(x)
-                x3 = np.floor(x) + 1 - x
-                x4 = np.floor(x) + 2 - x
-  
-                y1 = 1 + y - np.floor(y)
-                y2 = y - np.floor(y)
-                y3 = np.floor(y) + 1 - y
-                y4 = np.floor(y) + 2 - y
-                  
-                # make the x matrix, the pixelMatrix, and the yMatrix here. in the paper they are denoted F(u), C and F(v)
-                #For some reason, changing the variable names breaks line 209.
-                mat_l = np.matrix([[_u(x1, a), _u(x2, a), _u(x3, a), _u(x4, a)]])
-                mat_m = np.matrix([[img[int(y-y1), int(x-x1), c],img[int(y-y2), int(x-x1), c],img[int(y+y3), int(x-x1), c],img[int(y+y4), int(x-x1), c]],
-                                   [img[int(y-y1), int(x-x2), c],img[int(y-y2), int(x-x2), c],img[int(y+y3), int(x-x2), c],img[int(y+y4), int(x-x2), c]],
-                                   [img[int(y-y1), int(x+x3), c],img[int(y-y2), int(x+x3), c],img[int(y+y3), int(x+x3), c],img[int(y+y4), int(x+x3), c]],
-                                   [img[int(y-y1), int(x+x4), c],img[int(y-y2), int(x+x4), c],img[int(y+y3), int(x+x4), c],img[int(y+y4), int(x+x4), c]]])
-                mat_r = np.matrix([[_u(y1, a)], [_u(y2, a)], [_u(y3, a)], [_u(y4, a)]])
-                dst[j, i, c] = np.dot(np.dot(mat_l, mat_m), mat_r)
+        dst[:, :, c] = (
+            (
+                manip_y1 * pixel_pos1[:, :, c]
+                + manip_y2 * pixel_pos2[:, :, c]
+                + manip_y3 * pixel_pos3[:, :, c]
+                + manip_y4 * pixel_pos4[:, :, c]
+            )
+            * manip_x1
+            + (
+                manip_y1 * pixel_pos5[:, :, c]
+                + manip_y2 * pixel_pos6[:, :, c]
+                + manip_y3 * pixel_pos7[:, :, c]
+                + manip_y4 * pixel_pos8[:, :, c]
+            )
+            * manip_x2
+            + (
+                manip_y1 * pixel_pos9[:, :, c]
+                + manip_y2 * pixel_pos10[:, :, c]
+                + manip_y3 * pixel_pos11[:, :, c]
+                + manip_y4 * pixel_pos12[:, :, c]
+            )
+            * manip_x3
+            + (
+                manip_y1 * pixel_pos13[:, :, c]
+                + manip_y2 * pixel_pos14[:, :, c]
+                + manip_y3 * pixel_pos15[:, :, c]
+                + manip_y4 * pixel_pos16[:, :, c]
+            )
+            * manip_x4
+        )
+
     return dst
-  
 
-#__wd calculates the distance between the colors of two pixels.
+
+# __wd calculates the distance between the colors of two pixels.
 def __wd(p1, p2):
-    y,u,v = np.abs(np.subtract(p1[:,:,0],p2[:,:,0])), np.abs(np.subtract(p1[:,:,1],p2[:,:,1])),\
-          np.abs(np.subtract(p1[:,:,2],p2[:,:,2]))
-    return np.add(np.multiply(48,y),np.multiply(7,u), np.multiply(6,v))
+    y, u, v = (
+        np.abs(np.subtract(p1[:, :, 0], p2[:, :, 0])),
+        np.abs(np.subtract(p1[:, :, 1], p2[:, :, 1])),
+        np.abs(np.subtract(p1[:, :, 2], p2[:, :, 2])),
+    )
+    return np.add(np.multiply(48, y), np.multiply(7, u), np.multiply(6, v))
 
-#Color Interpolation for Vectorized xBR
-def __blendColors(edge, opposite, e, c1,c2):
-    edr = edge<opposite
-    mask = __wd(e,c1) <= __wd(e,c2)
+
+# Color Interpolation for Vectorized xBR
+def __blendColors(edge, opposite, e, c1, c2):
+    edr = edge < opposite
+    mask = __wd(e, c1) <= __wd(e, c2)
     spots = np.logical_and(edr, mask)
     inverse = np.logical_and(edr, np.logical_not(spots))
-    e[spots] = np.add(np.multiply(.5, e[spots]), np.multiply(.5, c1[spots]))
-    e[inverse] = np.add(np.multiply(.5,e[inverse]), np.multiply(.5,c2[inverse]))
-    #No Blend (BROKEN)
-    #e[spots] = c1[spots]
-    #e[inverse] = c2[inverse]
+    e[spots] = np.add(np.multiply(0.5, e[spots]), np.multiply(0.5, c1[spots]))
+    e[inverse] = np.add(np.multiply(0.5, e[inverse]), np.multiply(0.5, c2[inverse]))
+    # No Blend (BROKEN)
+    # e[spots] = c1[spots]
+    # e[inverse] = c2[inverse]
     return e
 
-'''
+
+"""
 description of the algorithm can be found here: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 
 Pixels are represented in the following format
        |A1|B1|C1|
@@ -264,85 +334,125 @@ Pixels are represented in the following format
     |D0|D |E |F |F4|
     |G0|G |H |I |I4|
        |G5|H5|I5|  
-Consider E as the central pixel.'''
-def xBR(img, Iterations = 1):
+Consider E as the central pixel."""
+
+
+def xBR(img, Iterations=1):
     cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-    for k in range(Iterations):
-        imgScaled = np.zeros((len(img) * 2, len(img[1]) *2,3), dtype=np.uint8)
-        img = __padding(img,len(img),len(img[1]), 3, 2)
-        a1,b1,c1 = img[:-4, 1:-3], img[:-4, 2:-2], img[:-4, 3:-1]
-        a0,a,b,c,c4 = img[1:-3, :-4], img[1:-3, 1:-3], img[1:-3, 2:-2], img[1:-3, 3:-1], img[1:-3, 4:]
-        d0,d,e,f,f4 = img[2:-2, :-4], img[2:-2, 1:-3], img[2:-2, 2:-2], img[2:-2, 3:-1], img[2:-2, 4:]
-        g0,g,h,i,i4 = img[3:-1, :-4], img[3:-1, 1:-3], img[3:-1, 2:-2], img[3:-1, 3:-1], img[3:-1, 4:]
-        g5,h5,i5 = img[4:,1:-3], img[4:,2:-2],img[4:,3:-1]
-        
-        #setting the weighted distances
-        ec, eg, if4, ih5, hf = __wd(e,c), __wd(e,g), __wd(i,f4), __wd(i,h5), __wd(h,f)
-        hd, hi5, fi4, fb, ei = __wd(h,d), __wd(h,i5), __wd(f,i4), __wd(f,b), __wd(e,i)
-        ea,gd0, gh5 = __wd(e,a),__wd(g,d0), __wd(g,h5)
-        bd, dg0, hg5 = __wd(b,d), __wd(d,g0), __wd(h,g5)
-        d0a, ab1 =  __wd(d0,a), __wd(a,b1)
-        a0d, a1b = __wd(a0,d), __wd(a1,b)
-        b1c, cf4 =  __wd(b1,c), __wd(c,f4)
-        bc1, fc4 = __wd(b,c1), __wd(f,c4)
+    for _ in range(Iterations):
+        imgScaled = np.zeros((len(img) * 2, len(img[1]) * 2, 3), dtype=np.uint8)
+        img = __padding(img, len(img), len(img[1]), 3, 2)
+        a1, b1, c1 = img[:-4, 1:-3], img[:-4, 2:-2], img[:-4, 3:-1]
+        a0, a, b, c, c4 = (
+            img[1:-3, :-4],
+            img[1:-3, 1:-3],
+            img[1:-3, 2:-2],
+            img[1:-3, 3:-1],
+            img[1:-3, 4:],
+        )
+        d0, d, e, f, f4 = (
+            img[2:-2, :-4],
+            img[2:-2, 1:-3],
+            img[2:-2, 2:-2],
+            img[2:-2, 3:-1],
+            img[2:-2, 4:],
+        )
+        g0, g, h, i, i4 = (
+            img[3:-1, :-4],
+            img[3:-1, 1:-3],
+            img[3:-1, 2:-2],
+            img[3:-1, 3:-1],
+            img[3:-1, 4:],
+        )
+        g5, h5, i5 = img[4:, 1:-3], img[4:, 2:-2], img[4:, 3:-1]
 
+        # setting the weighted distances
+        ec, eg, if4, ih5, hf = (
+            __wd(e, c),
+            __wd(e, g),
+            __wd(i, f4),
+            __wd(i, h5),
+            __wd(h, f),
+        )
+        hd, hi5, fi4, fb, ei = (
+            __wd(h, d),
+            __wd(h, i5),
+            __wd(f, i4),
+            __wd(f, b),
+            __wd(e, i),
+        )
+        ea, gd0, gh5 = __wd(e, a), __wd(g, d0), __wd(g, h5)
+        bd, dg0, hg5 = __wd(b, d), __wd(d, g0), __wd(h, g5)
+        d0a, ab1 = __wd(d0, a), __wd(a, b1)
+        a0d, a1b = __wd(a0, d), __wd(a1, b)
+        b1c, cf4 = __wd(b1, c), __wd(c, f4)
+        bc1, fc4 = __wd(b, c1), __wd(f, c4)
 
-        #Top Right Edge Detection Rule
+        # Top Right Edge Detection Rule
         edge = ei + ea + b1c + cf4 + (4 * fb)
-        opposite = bd + bc1 + hf + fc4 + (4*ec)
-        e = __blendColors(edge, opposite, e, b,f)
-        
-        #Top Left Edge Detection Rule
+        opposite = bd + bc1 + hf + fc4 + (4 * ec)
+        e = __blendColors(edge, opposite, e, b, f)
+
+        # Top Left Edge Detection Rule
         edge = ec + eg + d0a + ab1 + (4 * bd)
-        opposite = hd + fb + a0d + a1b + (4*ea)
-        e = __blendColors(edge,opposite, e, d, b) 
-        
+        opposite = hd + fb + a0d + a1b + (4 * ea)
+        e = __blendColors(edge, opposite, e, d, b)
 
-        #Bottom Left Edge Detection Rule
-        edge = ea + ei + gd0 + gh5 + (4*hd)
-        opposite = bd + dg0 + hf + hg5 + (4*eg)
-        e = __blendColors(edge, opposite, e, d, h) 
-        
+        # Bottom Left Edge Detection Rule
+        edge = ea + ei + gd0 + gh5 + (4 * hd)
+        opposite = bd + dg0 + hf + hg5 + (4 * eg)
+        e = __blendColors(edge, opposite, e, d, h)
 
-        #Bottom Right Edge Detection Rule
+        # Bottom Right Edge Detection Rule
         edge = ec + eg + if4 + ih5 + (4 * hf)
-        opposite = hd  + hi5 + fi4 + fb + (4 * ei)
-        e = __blendColors(edge, opposite, e, f, h) 
-        
+        opposite = hd + hi5 + fi4 + fb + (4 * ei)
+        e = __blendColors(edge, opposite, e, f, h)
+
         imgScaled[1::2, 1::2] = e
         imgScaled[:-1:2, 1::2] = e
         imgScaled[1::2, :-1:2] = e
         imgScaled[:-1:2, :-1:2] = e
 
-        img = np.array(imgScaled, dtype = np.uint8)
+        img = np.array(imgScaled, dtype=np.uint8)
     cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
     return img
 
-#Helper functions for rotsprite
 
-#distance in color between 2 pixels (its like prior implemented _wd() but without the constant multiplication)
+# Helper functions for rotsprite
+
+
+# distance in color between 2 pixels (its like prior implemented _wd() but without the constant multiplication)
 def dist(p1, p2):
-    y,u,v = np.abs(np.subtract(p1[:,:,0],p2[:,:,0])), np.abs(np.subtract(p1[:,:,1],p2[:,:,1])),\
-          np.abs(np.subtract(p1[:,:,2],p2[:,:,2]))
-    return y+u+v
+    y, u, v = (
+        np.abs(np.subtract(p1[:, :, 0], p2[:, :, 0])),
+        np.abs(np.subtract(p1[:, :, 1], p2[:, :, 1])),
+        np.abs(np.subtract(p1[:, :, 2], p2[:, :, 2])),
+    )
+    return y + u + v
 
-#determines if pixels are more similar to each other than the base input
+
+# determines if pixels are more similar to each other than the base input
 def similar(p1, p2, input):
-    return np.logical_or(np.all(p1 == p2, axis=2), np.logical_and(dist(p1, p2) <= dist(input, p2), dist(p1, p2) <= dist(input, p1)))
-    #return (p1 == p2 or (dist(p1, p2) <= dist(input, p2) and dist(p1, p2) <= dist(input, p1)))
+    return np.logical_or(
+        np.all(p1 == p2, axis=2),
+        np.logical_and(
+            dist(p1, p2) <= dist(input, p2), dist(p1, p2) <= dist(input, p1)
+        ),
+    )
+    # return (p1 == p2 or (dist(p1, p2) <= dist(input, p2) and dist(p1, p2) <= dist(input, p1)))
+
 
 def different(p1, p2, input):
     return np.logical_not(similar(p1, p2, input))
 
-def rotsprite(
-        img, Iterations = 1
-):
+
+def rotsprite(img, Iterations=1):
     img = np.array(img)
-    
-    for k in range(Iterations):
+
+    for _ in range(Iterations):
         img_scaled = img.repeat(2, 1).repeat(2, 0)
 
-        '''
+        """
         From here: https://godotshaders.com/shader/rotsprite-like-algorithm-for-cleaner-pixel-art-rotation/
         // suppose we are looking at input pixel cE which is surrounded by 8 other 
         // pixels:
@@ -352,33 +462,104 @@ def rotsprite(
         // and for that 1 input pixel cE we want to output 4 pixels oA, oB, oC, and oD:
         //  oA oB
         //  oC oD
-        '''
-        
+        """
+
         a, b, c = img[:-2, :-2], img[:-2, 1:-1], img[:-2, 2:]
         d, e, f = img[1:-1, :-2], img[1:-1, 1:-1], img[1:-1, 2:]
         g, h, i = img[2:, :-2], img[2:, 1:-1], img[2:, 2:]
 
         background = np.ones(e.shape, dtype=np.uint8) * 255
 
-        #these huge boolean statements suck but whatever
-        different_mask = np.logical_and(different(d, f, e), np.logical_and(different(h, b, e), 
-                        np.logical_or(similar(e, d, e), np.logical_or(similar(e, b, e), np.logical_or(similar(e, f, e), np.logical_or(similar(e, h, e), 
-                        np.logical_and(np.logical_or(np.logical_or(different(a, i, e), similar(e, g, e)), similar(e, c, e)), 
-                                        np.logical_or(np.logical_or(different(g, c, e), similar(e, a, e)), similar(e, i, e)))))))))
-        oAmask = np.logical_and(different_mask, np.logical_and(similar(b, d, e), np.logical_and(np.logical_or(different(e, a, e), different(b, background, e)), 
-                                                np.logical_or(np.logical_or(different(e, a, e), different(e, i, e)), np.logical_or(different(b, c, e), different(d, g, e))))))
-        oBmask = np.logical_and(different_mask, np.logical_and(similar(f, b, e), np.logical_and(np.logical_or(different(e, c, e), different(f, background, e)), 
-                                                np.logical_or(np.logical_or(different(e, c, e), different(e, g, e)), np.logical_or(different(f, i, e), different(b, a, e))))))
-        oCmask = np.logical_and(different_mask, np.logical_and(similar(d, h, e), np.logical_and(np.logical_or(different(e, g, e), different(d, background, e)), 
-                                                np.logical_or(np.logical_or(different(e, g, e), different(e, c, e)), np.logical_or(different(d, a, e), different(h, i, e))))))
-        oDmask = np.logical_and(different_mask, np.logical_and(similar(h, f, e), np.logical_and(np.logical_or(different(e, i, e), different(h, background, e)), 
-                                                np.logical_or(np.logical_or(different(e, i, e), different(e, a, e)), np.logical_or(different(h, g, e), different(f, c, e))))))
-
+        # these huge boolean statements suck but whatever
+        different_mask = np.logical_and(
+            different(d, f, e),
+            np.logical_and(
+                different(h, b, e),
+                np.logical_or(
+                    similar(e, d, e),
+                    np.logical_or(
+                        similar(e, b, e),
+                        np.logical_or(
+                            similar(e, f, e),
+                            np.logical_or(
+                                similar(e, h, e),
+                                np.logical_and(
+                                    np.logical_or(
+                                        np.logical_or(
+                                            different(a, i, e), similar(e, g, e)
+                                        ),
+                                        similar(e, c, e),
+                                    ),
+                                    np.logical_or(
+                                        np.logical_or(
+                                            different(g, c, e), similar(e, a, e)
+                                        ),
+                                        similar(e, i, e),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        oAmask = np.logical_and(
+            different_mask,
+            np.logical_and(
+                similar(b, d, e),
+                np.logical_and(
+                    np.logical_or(different(e, a, e), different(b, background, e)),
+                    np.logical_or(
+                        np.logical_or(different(e, a, e), different(e, i, e)),
+                        np.logical_or(different(b, c, e), different(d, g, e)),
+                    ),
+                ),
+            ),
+        )
+        oBmask = np.logical_and(
+            different_mask,
+            np.logical_and(
+                similar(f, b, e),
+                np.logical_and(
+                    np.logical_or(different(e, c, e), different(f, background, e)),
+                    np.logical_or(
+                        np.logical_or(different(e, c, e), different(e, g, e)),
+                        np.logical_or(different(f, i, e), different(b, a, e)),
+                    ),
+                ),
+            ),
+        )
+        oCmask = np.logical_and(
+            different_mask,
+            np.logical_and(
+                similar(d, h, e),
+                np.logical_and(
+                    np.logical_or(different(e, g, e), different(d, background, e)),
+                    np.logical_or(
+                        np.logical_or(different(e, g, e), different(e, c, e)),
+                        np.logical_or(different(d, a, e), different(h, i, e)),
+                    ),
+                ),
+            ),
+        )
+        oDmask = np.logical_and(
+            different_mask,
+            np.logical_and(
+                similar(h, f, e),
+                np.logical_and(
+                    np.logical_or(different(e, i, e), different(h, background, e)),
+                    np.logical_or(
+                        np.logical_or(different(e, i, e), different(e, a, e)),
+                        np.logical_or(different(h, g, e), different(f, c, e)),
+                    ),
+                ),
+            ),
+        )
 
         img_scaled[2:-2:2, 2:-2:2][oAmask] = b[oAmask]
         img_scaled[2:-2:2, 3:-2:2][oBmask] = f[oBmask]
         img_scaled[3:-2:2, 2:-2:2][oCmask] = d[oCmask]
         img_scaled[3:-2:2, 3:-2:2][oDmask] = h[oDmask]
-        
+
         img = np.array(img_scaled, dtype=np.uint8)
     return img
