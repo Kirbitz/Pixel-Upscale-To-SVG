@@ -339,7 +339,7 @@ Consider E as the central pixel."""
 
 def xBR(img, Iterations=1):
     cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-    for k in range(Iterations):
+    for _ in range(Iterations):
         imgScaled = np.zeros((len(img) * 2, len(img[1]) * 2, 3), dtype=np.uint8)
         img = __padding(img, len(img), len(img[1]), 3, 2)
         a1, b1, c1 = img[:-4, 1:-3], img[:-4, 2:-2], img[:-4, 3:-1]
@@ -415,4 +415,151 @@ def xBR(img, Iterations=1):
 
         img = np.array(imgScaled, dtype=np.uint8)
     cv2.cvtColor(img, cv2.COLOR_YUV2BGR)
+    return img
+
+
+# Helper functions for rotsprite
+
+
+# distance in color between 2 pixels (its like prior implemented _wd() but without the constant multiplication)
+def dist(p1, p2):
+    y, u, v = (
+        np.abs(np.subtract(p1[:, :, 0], p2[:, :, 0])),
+        np.abs(np.subtract(p1[:, :, 1], p2[:, :, 1])),
+        np.abs(np.subtract(p1[:, :, 2], p2[:, :, 2])),
+    )
+    return y + u + v
+
+
+# determines if pixels are more similar to each other than the base input
+def similar(p1, p2, input):
+    return np.logical_or(
+        np.all(p1 == p2, axis=2),
+        np.logical_and(
+            dist(p1, p2) <= dist(input, p2), dist(p1, p2) <= dist(input, p1)
+        ),
+    )
+    # return (p1 == p2 or (dist(p1, p2) <= dist(input, p2) and dist(p1, p2) <= dist(input, p1)))
+
+
+def different(p1, p2, input):
+    return np.logical_not(similar(p1, p2, input))
+
+
+def rotsprite(img, Iterations=1):
+    img = np.array(img)
+
+    for _ in range(Iterations):
+        img_scaled = img.repeat(2, 1).repeat(2, 0)
+
+        """
+        From here: https://godotshaders.com/shader/rotsprite-like-algorithm-for-cleaner-pixel-art-rotation/
+        // suppose we are looking at input pixel cE which is surrounded by 8 other 
+        // pixels:
+        //  a b c
+        //  d e f
+        //  g h i
+        // and for that 1 input pixel cE we want to output 4 pixels oA, oB, oC, and oD:
+        //  oA oB
+        //  oC oD
+        """
+
+        a, b, c = img[:-2, :-2], img[:-2, 1:-1], img[:-2, 2:]
+        d, e, f = img[1:-1, :-2], img[1:-1, 1:-1], img[1:-1, 2:]
+        g, h, i = img[2:, :-2], img[2:, 1:-1], img[2:, 2:]
+
+        background = np.ones(e.shape, dtype=np.uint8) * 255
+
+        # these huge boolean statements suck but whatever
+        different_mask = np.logical_and(
+            different(d, f, e),
+            np.logical_and(
+                different(h, b, e),
+                np.logical_or(
+                    similar(e, d, e),
+                    np.logical_or(
+                        similar(e, b, e),
+                        np.logical_or(
+                            similar(e, f, e),
+                            np.logical_or(
+                                similar(e, h, e),
+                                np.logical_and(
+                                    np.logical_or(
+                                        np.logical_or(
+                                            different(a, i, e), similar(e, g, e)
+                                        ),
+                                        similar(e, c, e),
+                                    ),
+                                    np.logical_or(
+                                        np.logical_or(
+                                            different(g, c, e), similar(e, a, e)
+                                        ),
+                                        similar(e, i, e),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        oAmask = np.logical_and(
+            different_mask,
+            np.logical_and(
+                similar(b, d, e),
+                np.logical_and(
+                    np.logical_or(different(e, a, e), different(b, background, e)),
+                    np.logical_or(
+                        np.logical_or(different(e, a, e), different(e, i, e)),
+                        np.logical_or(different(b, c, e), different(d, g, e)),
+                    ),
+                ),
+            ),
+        )
+        oBmask = np.logical_and(
+            different_mask,
+            np.logical_and(
+                similar(f, b, e),
+                np.logical_and(
+                    np.logical_or(different(e, c, e), different(f, background, e)),
+                    np.logical_or(
+                        np.logical_or(different(e, c, e), different(e, g, e)),
+                        np.logical_or(different(f, i, e), different(b, a, e)),
+                    ),
+                ),
+            ),
+        )
+        oCmask = np.logical_and(
+            different_mask,
+            np.logical_and(
+                similar(d, h, e),
+                np.logical_and(
+                    np.logical_or(different(e, g, e), different(d, background, e)),
+                    np.logical_or(
+                        np.logical_or(different(e, g, e), different(e, c, e)),
+                        np.logical_or(different(d, a, e), different(h, i, e)),
+                    ),
+                ),
+            ),
+        )
+        oDmask = np.logical_and(
+            different_mask,
+            np.logical_and(
+                similar(h, f, e),
+                np.logical_and(
+                    np.logical_or(different(e, i, e), different(h, background, e)),
+                    np.logical_or(
+                        np.logical_or(different(e, i, e), different(e, a, e)),
+                        np.logical_or(different(h, g, e), different(f, c, e)),
+                    ),
+                ),
+            ),
+        )
+
+        img_scaled[2:-2:2, 2:-2:2][oAmask] = b[oAmask]
+        img_scaled[2:-2:2, 3:-2:2][oBmask] = f[oBmask]
+        img_scaled[3:-2:2, 2:-2:2][oCmask] = d[oCmask]
+        img_scaled[3:-2:2, 3:-2:2][oDmask] = h[oDmask]
+
+        img = np.array(img_scaled, dtype=np.uint8)
     return img
